@@ -1,4 +1,71 @@
-FROM ubuntu:latest
-LABEL authors="johandiaz"
+version: '3.8'
 
-ENTRYPOINT ["top", "-b"]
+services:
+  # POSTGRESQL - MAnejo de Base de Datos Principal
+  postgres:
+    image: postgres:16-alpine
+    container_name: plazoleta-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: powerup_pragma
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - plazoleta-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MONGODB - MAnejo de la Trazabilidad
+  mongodb:
+    image: mongo:7
+    container_name: plazoleta-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+      MONGO_INITDB_DATABASE: plazoleta_trazabilidad
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - plazoleta-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PGADMIN - MAnejo de Interfaz visual para PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: plazoleta-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@plazoleta.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - plazoleta-network
+    depends_on:
+      - postgres
+
+# Persistencia de datos
+volumes:
+  postgres-data:
+    driver: local
+  mongo-data:
+    driver: local
+
+networks:
+  plazoleta-network:
+    driver: bridge

@@ -7,40 +7,40 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "platos")
+@Table(name = "dishes")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PlateEntity {
+public class DisheEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 200)
-    private String nombre;
+    private String name;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String descripcion;
+    private String description;
 
     @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal precio;
+    private BigDecimal price;
 
-    @Column(name = "url_imagen", columnDefinition = "TEXT")
-    private String urlImagen;
+    @Column(name = "url_image", columnDefinition = "TEXT")
+    private String urlImage;
 
     @Column(nullable = false)
-    private Boolean activo = true;
+    private Boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private CategoryEntity categoria;
+    @JoinColumn(name = "categories_id", nullable = false)
+    private CategoryEntity category;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurante_id", nullable = false)
-    private RestauranteEntity restaurante;
+    @JoinColumn(name = "restaurants_id", nullable = false)
+    private RestaurantEntity restaurant;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -48,8 +48,8 @@ public class PlateEntity {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        if (activo == null) {
-            activo = true;
+        if (active == null) {
+            active = true;
         }
     }
 }

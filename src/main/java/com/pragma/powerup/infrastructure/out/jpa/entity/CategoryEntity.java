@@ -5,7 +5,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categorias")
+@Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,10 +18,10 @@ public class CategoryEntity {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 100)
-    private String nombre;
+    private String name;
 
     @Column(columnDefinition = "TEXT")
-    private String descripcion;
+    private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
