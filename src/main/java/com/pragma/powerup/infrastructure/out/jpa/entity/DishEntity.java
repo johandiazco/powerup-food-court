@@ -1,8 +1,7 @@
 package com.pragma.powerup.infrastructure.out.jpa.entity;
 
 import lombok.*;
-
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -35,11 +34,11 @@ public class DishEntity {
     private Boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categories_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurants_id", nullable = false)
+    @JoinColumn(name = "restaurant_id", nullable = false)
     private RestaurantEntity restaurant;
 
     @Column(name = "created_at", nullable = false, updatable = false)

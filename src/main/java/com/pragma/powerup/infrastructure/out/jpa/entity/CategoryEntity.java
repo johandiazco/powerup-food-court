@@ -1,7 +1,7 @@
 package com.pragma.powerup.infrastructure.out.jpa.entity;
 
+import jakarta.persistence.*;
 import lombok.*;
-import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
