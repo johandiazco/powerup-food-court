@@ -1,16 +1,16 @@
 package com.pragma.powerup.infrastructure.out.jpa.repository;
 
-import com.pragma.powerup.infrastructure.out.jpa.entity.DisheEntity;
+import com.pragma.powerup.infrastructure.out.jpa.entity.DishEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
-public interface IDisheRepository extends JpaRepository<DisheEntity, Long> {
-    List<DisheEntity> findByRestauranteIdAndActivoTrue(Long restauranteId);
-    @Query("SELECT p FROM DisheEntity p WHERE p.restaurant.id = :restauranteId " +
+public interface IDisheRepository extends JpaRepository<DishEntity, Long> {
+    List<DishEntity> findByRestauranteIdAndActivoTrue(Long restauranteId);
+    @Query("SELECT p FROM DishEntity p WHERE p.restaurant.id = :restauranteId " +
             "AND p.category.id = :categoriaId AND p.active = true")
-    List<DisheEntity> findByRestauranteAndCategoria(
+    List<DishEntity> findByRestauranteAndCategoria(
             @Param("restaurantId") Long restaurantId,
             @Param("categoryId") Long categoryId
     );
