@@ -1,14 +1,12 @@
 spring:
   application:
     name: plazoleta-restaurant-ms
-
   # Configuracion PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/powerup_pragma
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
-
   # Comfiguracion JPA
   jpa:
     show-sql: true
@@ -21,8 +19,6 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-
-
 server:
   port: 8081
   error:
@@ -36,7 +32,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
-
 logging:
   level:
     root: INFO
