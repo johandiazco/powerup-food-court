@@ -16,7 +16,7 @@ public class Restaurant {
     private String nit;
     private String address;
     private String phone;
-    private String urlLogo;
+    private String logoUrl;
     private Long ownerId;
 
     //VALIDACIÓN EN EL DOMINIO
