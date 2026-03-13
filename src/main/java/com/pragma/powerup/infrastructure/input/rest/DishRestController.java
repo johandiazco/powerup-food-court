@@ -1,6 +1,7 @@
 package com.pragma.powerup.infrastructure.input.rest;
 
 import com.pragma.powerup.application.dto.request.DishRequestDto;
+import com.pragma.powerup.application.dto.request.UpdateDishRequestDto;
 import com.pragma.powerup.application.dto.response.DishResponseDto;
 import com.pragma.powerup.application.handler.IDishHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/dishes")
@@ -106,6 +108,73 @@ public class DishRestController {
     @GetMapping("/restaurant/{restaurantId}")
     public ResponseEntity<List<DishResponseDto>> getDishesByRestaurant(@PathVariable Long restaurantId) {
         List<DishResponseDto> response = dishHandler.getDishesByRestaurant(restaurantId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Actualizar plato HU-3",
+            description = "Actualiza los datos de un plato existente. Solo se pueden modificar: precio, descripción, nombre, imagen y categoría"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Plato actualizado exitosamente",
+                    content = @Content(schema = @Schema(implementation = DishResponseDto.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Datos inválidos",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Plato o categoría no encontrado",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Error interno del servidor",
+                    content = @Content
+            )
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<DishResponseDto> updateDish(
+            @PathVariable Long id,
+            @RequestBody UpdateDishRequestDto updateDto) {
+        DishResponseDto response = dishHandler.updateDish(id, updateDto);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Cambiar estado del plato HU-4",
+            description = "Activa o desactiva un plato del menú"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Estado actualizado exitosamente",
+                    content = @Content(schema = @Schema(implementation = DishResponseDto.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Plato no encontrado",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Error interno del servidor",
+                    content = @Content
+            )
+    })
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<DishResponseDto> toggleDishStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> statusUpdate) {
+        Boolean active = statusUpdate.get("active");
+        if (active == null) {
+            throw new IllegalArgumentException("El campo 'active' es obligatorio");
+        }
+        DishResponseDto response = dishHandler.toggleDishStatus(id, active);
         return ResponseEntity.ok(response);
     }
 }

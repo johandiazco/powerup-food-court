@@ -1,10 +1,12 @@
 package com.pragma.powerup.application.handler.impl;
 
 import com.pragma.powerup.application.dto.request.DishRequestDto;
+import com.pragma.powerup.application.dto.request.UpdateDishRequestDto;
 import com.pragma.powerup.application.dto.response.DishResponseDto;
 import com.pragma.powerup.application.handler.IDishHandler;
 import com.pragma.powerup.application.mapper.IDishRequestMapper;
 import com.pragma.powerup.application.mapper.IDishResponseMapper;
+import com.pragma.powerup.application.mapper.IUpdateDishRequestMapper;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.model.Dish;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class DishHandler implements IDishHandler {
     private final IDishServicePort dishServicePort;
     private final IDishRequestMapper requestMapper;
     private final IDishResponseMapper responseMapper;
+    private final IUpdateDishRequestMapper updateRequestMapper;
 
     @Override
     public DishResponseDto createDish(DishRequestDto requestDto) {
@@ -41,5 +44,18 @@ public class DishHandler implements IDishHandler {
     public List<DishResponseDto> getDishesByRestaurant(Long restaurantId) {
         List<Dish> dishes = dishServicePort.getDishesByRestaurant(restaurantId);
         return responseMapper.toResponseDtoList(dishes);
+    }
+
+    @Override
+    public DishResponseDto updateDish(Long id, UpdateDishRequestDto updateDto) {
+        Dish dishUpdates = updateRequestMapper.toDish(updateDto);
+        Dish updatedDish = dishServicePort.updateDish(id, dishUpdates);
+        return responseMapper.toResponseDto(updatedDish);
+    }
+
+    @Override
+    public DishResponseDto toggleDishStatus(Long id, Boolean active) {
+        Dish updatedDish = dishServicePort.toggleDishStatus(id, active);
+        return responseMapper.toResponseDto(updatedDish);
     }
 }

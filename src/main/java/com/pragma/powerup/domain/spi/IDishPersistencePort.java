@@ -9,4 +9,5 @@ public interface IDishPersistencePort {
     Optional<Dish> findDishById(Long id);
     List<Dish> findDishesByRestaurantId(Long restaurantId);
     boolean existsById(Long id);
+    Dish updateDish(Dish dish);
 }

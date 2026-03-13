@@ -7,4 +7,6 @@ public interface IDishServicePort {
     Dish createDish(Dish dish);
     Dish getDishById(Long id);
     List<Dish> getDishesByRestaurant(Long restaurantId);
+    Dish updateDish(Long id, Dish dish);
+    Dish toggleDishStatus(Long id, Boolean active);
 }
