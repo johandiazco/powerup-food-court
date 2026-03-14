@@ -27,6 +27,7 @@ ext {
     lombokMapstructBindingVersion = "0.2.0"
     postgresVersion = "42.7.2"
     openApiVersion = "2.3.0"
+    jjwtVersion = "0.12.3"
 }
 
 dependencies {
@@ -34,6 +35,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    //SPRING SECURITY HU-5
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    //JWT HU-5
+    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     runtimeOnly "org.postgresql:postgresql:${postgresVersion}"
@@ -47,7 +58,7 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
-    
+
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${openApiVersion}"
 }
 
@@ -65,6 +76,16 @@ jacocoTestReport {
         xml.required = true
         html.required = true
     }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += [
+            '-parameters',
+            '-Amapstruct.suppressGeneratorTimestamp=true',
+            '-Amapstruct.suppressGeneratorVersionInfoComment=true',
+            '-Amapstruct.defaultComponentModel=spring'
+    ]
 }
 
 tasks.withType(JavaCompile) {

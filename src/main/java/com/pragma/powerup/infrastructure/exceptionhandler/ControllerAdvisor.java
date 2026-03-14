@@ -4,11 +4,16 @@ import com.pragma.powerup.domain.exception.CategoryNotFoundException;
 import com.pragma.powerup.domain.exception.DishNotFoundException;
 import com.pragma.powerup.domain.exception.RestaurantAlreadyExistsException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
+import com.pragma.powerup.domain.exception.UserAlreadyExistsException;
+import com.pragma.powerup.domain.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
@@ -17,7 +22,28 @@ public class ControllerAdvisor {
     private static final String MESSAGE = "message";
     private static final String TIMESTAMP = "timestamp";
 
-    //RESTAURANT EXCEPTIONS HU-1
+    //USER EXCEPTIONS HU-1, HU-6, HU-8
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFoundException(
+            UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        MESSAGE, ex.getMessage(),
+                        TIMESTAMP, LocalDateTime.now().toString()
+                ));
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(
+            UserAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        MESSAGE, ex.getMessage(),
+                        TIMESTAMP, LocalDateTime.now().toString()
+                ));
+    }
+
+    //RESTAURANT EXCEPTIONS HU-2
     @ExceptionHandler(RestaurantNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleRestaurantNotFoundException(
             RestaurantNotFoundException ex) {
@@ -38,7 +64,7 @@ public class ControllerAdvisor {
                 ));
     }
 
-    //DISH EXCEPTIONS HU-2
+    //DISH EXCEPTIONS HU-3, HU-4
     @ExceptionHandler(DishNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleDishNotFoundException(
             DishNotFoundException ex) {
@@ -55,6 +81,24 @@ public class ControllerAdvisor {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of(
                         MESSAGE, ex.getMessage(),
+                        TIMESTAMP, LocalDateTime.now().toString()
+                ));
+    }
+
+    //VALIDATION EXCEPTIONS
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "errors", errors,
                         TIMESTAMP, LocalDateTime.now().toString()
                 ));
     }
