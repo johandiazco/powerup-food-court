@@ -1,5 +1,6 @@
 package com.pragma.powerup.infrastructure.configuration;
 
+import com.pragma.powerup.domain.api.IAuthenticationService;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.api.IObjectServicePort;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
@@ -9,6 +10,7 @@ import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IObjectPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.IUserPersistencePort;
+import com.pragma.powerup.domain.usecase.AuthenticationUseCase;
 import com.pragma.powerup.domain.usecase.DishUseCase;
 import com.pragma.powerup.domain.usecase.ObjectUseCase;
 import com.pragma.powerup.domain.usecase.RestaurantUseCase;
@@ -27,9 +29,12 @@ import com.pragma.powerup.infrastructure.out.jpa.repository.IDishRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IObjectRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IRestaurantRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IUserRepository;
+import com.pragma.powerup.infrastructure.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -47,7 +52,7 @@ public class BeanConfiguration {
     private final IUserRepository userRepository;
     private final IUserEntityMapper userEntityMapper;
 
-    //PASSWORD
+    //PASSWORD ENCODER BEAN
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -72,6 +77,20 @@ public class BeanConfiguration {
     @Bean
     public IUserServicePort userServicePort() {
         return new UserUseCase(userPersistencePort());
+    }
+
+    //AUTHENTICATION BEANS HU-5
+    @Bean
+    public IAuthenticationService authenticationService(
+            AuthenticationManager authenticationManager,
+            UserDetailsService userDetailsService,
+            JwtService jwtService) {
+        return new AuthenticationUseCase(
+                authenticationManager,
+                userDetailsService,
+                jwtService,
+                userPersistencePort()
+        );
     }
 
     //RESTAURANT BEANS HU-2

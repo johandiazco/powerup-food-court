@@ -8,10 +8,13 @@ import com.pragma.powerup.domain.exception.UserAlreadyExistsException;
 import com.pragma.powerup.domain.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +24,27 @@ public class ControllerAdvisor {
 
     private static final String MESSAGE = "message";
     private static final String TIMESTAMP = "timestamp";
+
+    //AUTHENTICATION EXCEPTIONS HU-5
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentialsException(
+            BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                        MESSAGE, ex.getMessage(),
+                        TIMESTAMP, LocalDateTime.now().toString()
+                ));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationException(
+            AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                        MESSAGE, "Error de autenticación: " + ex.getMessage(),
+                        TIMESTAMP, LocalDateTime.now().toString()
+                ));
+    }
 
     //USER EXCEPTIONS HU-1, HU-6, HU-8
     @ExceptionHandler(UserNotFoundException.class)

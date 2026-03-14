@@ -1,13 +1,13 @@
 spring:
   application:
     name: plazoleta-restaurant-ms
-  # Configuracion PostgreSQL
+  #Configuracion PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/powerup_pragma
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
-  # Comfiguracion JPA
+  #Comfiguracion JPA
   jpa:
     show-sql: true
     hibernate:
@@ -19,24 +19,33 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
+
 server:
   port: 8081
   error:
     include-message: always
     include-binding-errors: always
 
-# Configuracion OpenAPI
+#Configuracion JWT
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 86400000 #24 horas en milisegundos
+
+#Configuracion OpenAPI
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
 logging:
   level:
     root: INFO
     com.pragma.powerup: DEBUG
-    org.hibernate.SQL: DEBUG  # Linea de SQL queries
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # linea de Parámetros SQL
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.security: DEBUG
+
 appDescription: "Pragma Powerup - Plaza de Comidas"
 appVersion: "1.0.0"
