@@ -5,6 +5,8 @@ import com.pragma.powerup.domain.exception.RestaurantAlreadyExistsException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public class RestaurantUseCase implements IRestaurantServicePort {
 
@@ -16,15 +18,15 @@ public class RestaurantUseCase implements IRestaurantServicePort {
 
     @Override
     public Restaurant createRestaurant(Restaurant restaurant) {
-        //validamos datos del restaurante
+        //Validamos datos del restaurante
         restaurant.validate();
 
-        //se verificar que el NIT/NIE no esté duplicado
+        //Verificamos que el NIT no esté duplicado
         if (restaurantPersistencePort.existsByNit(restaurant.getNit())) {
             throw new RestaurantAlreadyExistsException(restaurant.getNit());
         }
 
-        //se guardar el restaurante
+        //Guardamos el restaurante
         return restaurantPersistencePort.saveRestaurant(restaurant);
     }
 
@@ -37,5 +39,10 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     @Override
     public boolean existsByNit(String nit) {
         return restaurantPersistencePort.existsByNit(nit);
+    }
+
+    @Override
+    public Page<Restaurant> getAllRestaurants(Pageable pageable) {
+        return restaurantPersistencePort.findAllRestaurants(pageable);
     }
 }

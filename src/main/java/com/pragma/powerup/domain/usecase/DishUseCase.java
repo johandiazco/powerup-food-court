@@ -8,6 +8,8 @@ import com.pragma.powerup.domain.model.Dish;
 import com.pragma.powerup.domain.spi.ICategoryPersistencePort;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public class DishUseCase implements IDishServicePort {
@@ -27,22 +29,15 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish createDish(Dish dish) {
-        //Validamos modelo
         dish.validate();
 
-        //verifica restaurante existente
-        if (!restaurantPersistencePort.existsByNit(String.valueOf(dish.getRestaurantId()))) {
-            //se prueba por Id
-            restaurantPersistencePort.findRestaurantById(dish.getRestaurantId())
-                    .orElseThrow(() -> new RestaurantNotFoundException(dish.getRestaurantId()));
-        }
+        restaurantPersistencePort.findRestaurantById(dish.getRestaurantId())
+                .orElseThrow(() -> new RestaurantNotFoundException(dish.getRestaurantId()));
 
-        //Verifica categoría existente
         if (!categoryPersistencePort.existsById(dish.getCategoryId())) {
             throw new CategoryNotFoundException(dish.getCategoryId());
         }
 
-        //se guarda el plato
         return dishPersistencePort.saveDish(dish);
     }
 
@@ -54,7 +49,6 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public List<Dish> getDishesByRestaurant(Long restaurantId) {
-        //se verifica si el restaurante existe
         restaurantPersistencePort.findRestaurantById(restaurantId)
                 .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
 
@@ -63,11 +57,9 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish updateDish(Long id, Dish dishUpdates) {
-        //Verificamos que el plato exista
         Dish existingDish = dishPersistencePort.findDishById(id)
                 .orElseThrow(() -> new DishNotFoundException(id));
 
-        //Se actualizan solo campos permitidos "precio y descripción"
         if (dishUpdates.getPrice() != null) {
             if (dishUpdates.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("El precio debe ser mayor a cero");
@@ -82,7 +74,6 @@ public class DishUseCase implements IDishServicePort {
             existingDish.setDescription(dishUpdates.getDescription());
         }
 
-        //se actualizan otros campos opcionales, segun pide el requisito
         if (dishUpdates.getName() != null && !dishUpdates.getName().trim().isEmpty()) {
             if (dishUpdates.getName().length() > 100) {
                 throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
@@ -109,13 +100,25 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish toggleDishStatus(Long id, Boolean active) {
-        //Verificamos que el plato exista
         Dish existingDish = dishPersistencePort.findDishById(id)
                 .orElseThrow(() -> new DishNotFoundException(id));
 
-        //actualizamos estado
         existingDish.setActive(active);
 
         return dishPersistencePort.updateDish(existingDish);
+    }
+
+    @Override
+    public Page<Dish> getActiveDishesByRestaurant(Long restaurantId, Long categoryId, Pageable pageable) {
+        //Verificamos que el restaurante existe
+        restaurantPersistencePort.findRestaurantById(restaurantId)
+                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
+
+        //Si se especifica categoría, verificar que exista
+        if (categoryId != null && !categoryPersistencePort.existsById(categoryId)) {
+            throw new CategoryNotFoundException(categoryId);
+        }
+
+        return dishPersistencePort.findActiveDishesByRestaurant(restaurantId, categoryId, pageable);
     }
 }

@@ -3,6 +3,7 @@ package com.pragma.powerup.application.handler.impl;
 import com.pragma.powerup.application.dto.request.DishRequestDto;
 import com.pragma.powerup.application.dto.request.UpdateDishRequestDto;
 import com.pragma.powerup.application.dto.response.DishResponseDto;
+import com.pragma.powerup.application.dto.response.PageableResponseDto;
 import com.pragma.powerup.application.handler.IDishHandler;
 import com.pragma.powerup.application.mapper.IDishRequestMapper;
 import com.pragma.powerup.application.mapper.IDishResponseMapper;
@@ -10,6 +11,10 @@ import com.pragma.powerup.application.mapper.IUpdateDishRequestMapper;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.model.Dish;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -27,7 +32,6 @@ public class DishHandler implements IDishHandler {
     @Override
     public DishResponseDto createDish(DishRequestDto requestDto) {
         Dish dish = requestMapper.toDish(requestDto);
-        //ejecutamos logica de dominio
         Dish createdDish = dishServicePort.createDish(dish);
         return responseMapper.toResponseDto(createdDish);
     }
@@ -57,5 +61,44 @@ public class DishHandler implements IDishHandler {
     public DishResponseDto toggleDishStatus(Long id, Boolean active) {
         Dish updatedDish = dishServicePort.toggleDishStatus(id, active);
         return responseMapper.toResponseDto(updatedDish);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageableResponseDto<DishResponseDto> getActiveDishesPaginated(
+            Long restaurantId,
+            Long categoryId,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
+        //Creamos Sort
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+        Sort sort = Sort.by(direction, sortBy);
+
+        //Creamos Pageable
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        //Ejecutamos búsqueda paginada
+        Page<Dish> dishPage = dishServicePort.getActiveDishesByRestaurant(restaurantId, categoryId, pageable);
+
+        //Convertimos a DTOs
+        List<DishResponseDto> dishDtos = responseMapper.toResponseDtoList(dishPage.getContent());
+
+        //Construimos respuesta paginada
+        PageableResponseDto<DishResponseDto> response = new PageableResponseDto<>();
+        response.setContent(dishDtos);
+        response.setPageNumber(dishPage.getNumber());
+        response.setPageSize(dishPage.getSize());
+        response.setTotalElements(dishPage.getTotalElements());
+        response.setTotalPages(dishPage.getTotalPages());
+        response.setFirst(dishPage.isFirst());
+        response.setLast(dishPage.isLast());
+        response.setEmpty(dishPage.isEmpty());
+
+        return response;
     }
 }
