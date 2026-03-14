@@ -31,6 +31,7 @@ public class DishEntity {
     private String urlImage;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
