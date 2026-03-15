@@ -4,9 +4,16 @@ spring:
   #Configuracion PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/powerup_pragma
-    username: postgres
-    password: postgres
+    username: johandiaz
+    password:
     driver-class-name: org.postgresql.Driver
+
+  # MongoDB para trazabilidad HU-17
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/plazoleta_trazabilidad
+      auto-index-creation: true
+
   #Comfiguracion JPA
   jpa:
     show-sql: true

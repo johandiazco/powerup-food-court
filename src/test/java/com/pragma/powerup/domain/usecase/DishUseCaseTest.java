@@ -99,7 +99,6 @@ class UserUseCaseTest {
 
         when(userPersistencePort.existsByCorreo(anyString())).thenReturn(false);
         when(userPersistencePort.existsByDocumentoIdentidad(anyString())).thenReturn(true);
-t
         UserAlreadyExistsException exception = assertThrows(
                 UserAlreadyExistsException.class,
                 () -> userUseCase.createPropietario(validUser)

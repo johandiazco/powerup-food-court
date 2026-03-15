@@ -1,6 +1,7 @@
 package com.pragma.powerup.domain.usecase;
 
 import com.pragma.powerup.domain.api.IOrderServicePort;
+import com.pragma.powerup.domain.api.IOrderTraceServicePort;
 import com.pragma.powerup.domain.exception.ActiveOrderExistsException;
 import com.pragma.powerup.domain.exception.DishNotFoundException;
 import com.pragma.powerup.domain.exception.InvalidOrderOperationException;
@@ -12,6 +13,8 @@ import com.pragma.powerup.domain.model.OrderStatus;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import com.pragma.powerup.domain.spi.IUserPersistencePort;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
@@ -19,20 +22,27 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+@Slf4j
 public class OrderUseCase implements IOrderServicePort {
 
     private final IOrderPersistencePort orderPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IDishPersistencePort dishPersistencePort;
+    private final IOrderTraceServicePort traceService; // HU-17
+    private final IUserPersistencePort userPersistencePort;
 
     public OrderUseCase(
             IOrderPersistencePort orderPersistencePort,
             IRestaurantPersistencePort restaurantPersistencePort,
-            IDishPersistencePort dishPersistencePort
+            IDishPersistencePort dishPersistencePort,
+            IOrderTraceServicePort traceService,
+            IUserPersistencePort userPersistencePort
     ) {
         this.orderPersistencePort = orderPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
+        this.traceService = traceService;
+        this.userPersistencePort = userPersistencePort;
     }
 
     @Override
@@ -61,7 +71,12 @@ public class OrderUseCase implements IOrderServicePort {
         order.setSecurityPin(null);
 
         //Se guardar pedido
-        return orderPersistencePort.saveOrder(order);
+        Order savedOrder = orderPersistencePort.saveOrder(order);
+
+        //Registramos trazabilidad - estado inicial - HU-17
+        registerTrace(savedOrder.getId(), null, OrderStatus.PENDIENTE, order.getClientId());
+
+        return savedOrder;
     }
 
     @Override
@@ -88,10 +103,15 @@ public class OrderUseCase implements IOrderServicePort {
                     "El pedido no puede ser asignado. Estado actual: " + order.getStatus());
         }
 
+        OrderStatus previousStatus = order.getStatus();
+
         order.setChefId(chefId);
         order.setStatus(OrderStatus.EN_PREPARACION);
 
         orderPersistencePort.saveOrder(order);
+
+        //Registramos trazabilidad -HU-17
+        registerTrace(orderId, previousStatus, OrderStatus.EN_PREPARACION, chefId);
     }
 
     @Override
@@ -109,12 +129,17 @@ public class OrderUseCase implements IOrderServicePort {
                     "Solo el empleado asignado puede marcar el pedido como listo");
         }
 
+        OrderStatus previousStatus = order.getStatus();
+
         //Generamos PIN de seguridad - hu14
         String securityPin = generateSecurityPin();
         order.setSecurityPin(securityPin);
         order.setStatus(OrderStatus.LISTO);
 
         orderPersistencePort.saveOrder(order);
+
+        //Registramos trazabilidad -HU-17
+        registerTrace(orderId, previousStatus, OrderStatus.LISTO, chefId);
     }
 
     @Override
@@ -131,9 +156,14 @@ public class OrderUseCase implements IOrderServicePort {
             throw new InvalidOrderOperationException("PIN de seguridad incorrecto");
         }
 
+        OrderStatus previousStatus = order.getStatus();
+
         order.setStatus(OrderStatus.ENTREGADO);
 
         orderPersistencePort.saveOrder(order);
+
+        //Registramos trazabilidad -HU-17
+        registerTrace(orderId, previousStatus, OrderStatus.ENTREGADO, order.getChefId());
     }
 
     @Override
@@ -151,9 +181,14 @@ public class OrderUseCase implements IOrderServicePort {
                     "El pedido solo puede ser cancelado si está en estado PENDIENTE. Estado actual: " + order.getStatus());
         }
 
+        OrderStatus previousStatus = order.getStatus();
+
         order.setStatus(OrderStatus.CANCELADO);
 
         orderPersistencePort.saveOrder(order);
+
+        //Registramos trazabilidad -HU-17
+        registerTrace(orderId, previousStatus, OrderStatus.CANCELADO, clientId);
     }
 
     private void validateDishes(Order order) {
@@ -188,5 +223,23 @@ public class OrderUseCase implements IOrderServicePort {
         Random random = new Random();
         int pin = 100000 + random.nextInt(900000);
         return String.valueOf(pin);
+    }
+
+    private void registerTrace(Long orderId, OrderStatus previousStatus, OrderStatus newStatus, Long userId) {
+        try {
+            var user = userPersistencePort.findUserById(userId).orElse(null);
+
+            traceService.logStatusChange(
+                    orderId,
+                    previousStatus != null ? previousStatus.name() : null,
+                    newStatus.name(),
+                    userId,
+                    user != null ? user.getCorreo() : "SYSTEM",
+                    user != null ? user.getRol().name() : "SYSTEM"
+            );
+        } catch (Exception e) {
+            log.error("❌ Error al registrar trazabilidad para pedido {}: {}", orderId, e.getMessage());
+            //NO lanzamos excepción para no afectar flujo principal
+        }
     }
 }

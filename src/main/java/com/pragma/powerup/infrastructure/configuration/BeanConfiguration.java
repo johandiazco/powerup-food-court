@@ -3,15 +3,18 @@ package com.pragma.powerup.infrastructure.configuration;
 import com.pragma.powerup.domain.api.IAuthenticationService;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.api.IOrderServicePort;
+import com.pragma.powerup.domain.api.IOrderTraceServicePort;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
 import com.pragma.powerup.domain.api.IUserServicePort;
 import com.pragma.powerup.domain.spi.ICategoryPersistencePort;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
+import com.pragma.powerup.domain.spi.IOrderTracePersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.IUserPersistencePort;
 import com.pragma.powerup.domain.usecase.AuthenticationUseCase;
 import com.pragma.powerup.domain.usecase.DishUseCase;
+import com.pragma.powerup.domain.usecase.OrderTraceUseCase;
 import com.pragma.powerup.domain.usecase.OrderUseCase;
 import com.pragma.powerup.domain.usecase.RestaurantUseCase;
 import com.pragma.powerup.domain.usecase.UserUseCase;
@@ -36,7 +39,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @RequiredArgsConstructor
@@ -51,7 +53,6 @@ public class BeanConfiguration {
     private final IUserEntityMapper userEntityMapper;
     private final IOrderRepository orderRepository;
     private final IOrderEntityMapper orderEntityMapper;
-    private final PasswordEncoder passwordEncoder;
 
     //RESTAURANT BEANS
     @Bean
@@ -110,6 +111,13 @@ public class BeanConfiguration {
         );
     }
 
+    //ORDER TRACE BEANS HU-17
+    @Bean
+    public IOrderTraceServicePort orderTraceServicePort(
+            IOrderTracePersistencePort tracePersistencePort) {
+        return new OrderTraceUseCase(tracePersistencePort);
+    }
+
     //ORDER BEANS HU-11
     @Bean
     public IOrderPersistencePort orderPersistencePort() {
@@ -117,11 +125,14 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public IOrderServicePort orderServicePort() {
+    public IOrderServicePort orderServicePort(
+            IOrderTraceServicePort traceServicePort) {
         return new OrderUseCase(
                 orderPersistencePort(),
                 restaurantPersistencePort(),
-                dishPersistencePort()
+                dishPersistencePort(),
+                traceServicePort,
+                userPersistencePort()
         );
     }
 }
