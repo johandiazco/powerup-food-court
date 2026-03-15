@@ -44,8 +44,8 @@ public class AuthenticationUseCase implements IAuthenticationService {
             User user = userPersistencePort.findUserByCorreo(loginRequest.getCorreo())
                     .orElseThrow(() -> new BadCredentialsException("Usuario no encontrado"));
 
-            //Generamos token JWT
-            String jwtToken = jwtService.generateToken(userDetails);
+            //Generamos token JWT CON userId
+            String jwtToken = jwtService.generateToken(userDetails, user.getId());
 
             //Construimos respuesta
             return AuthResponseDto.builder()

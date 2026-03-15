@@ -7,7 +7,6 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,6 +26,23 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public Long getUserIdFromToken(String token) {
+        Claims claims = extractAllClaims(token);
+        Object userIdObj = claims.get("userId");
+
+        if (userIdObj == null) {
+            throw new IllegalArgumentException("Token no contiene userId");
+        }
+
+        if (userIdObj instanceof Integer) {
+            return ((Integer) userIdObj).longValue();
+        } else if (userIdObj instanceof Long) {
+            return (Long) userIdObj;
+        } else {
+            throw new IllegalArgumentException("userId en token tiene formato inválido");
+        }
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -44,6 +60,22 @@ public class JwtService {
                 .findFirst()
                 .map(Object::toString)
                 .orElse(""));
+
+        return generateToken(extraClaims, userDetails);
+    }
+
+    //Generamos token con userId
+    public String generateToken(UserDetails userDetails, Long userId) {
+        Map<String, Object> extraClaims = new HashMap<>();
+
+        //Agregamos rol al token
+        extraClaims.put("role", userDetails.getAuthorities().stream()
+                .findFirst()
+                .map(Object::toString)
+                .orElse(""));
+
+        //Agregamos userId al token
+        extraClaims.put("userId", userId);
 
         return generateToken(extraClaims, userDetails);
     }
