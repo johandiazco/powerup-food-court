@@ -38,9 +38,8 @@ public class OrderUseCase implements IOrderServicePort {
     @Override
     public Order createOrder(Order order) {
         //Validamos que el restaurante exista
-        if (!restaurantPersistencePort.existsById(order.getRestaurantId())) {
-            throw new RestaurantNotFoundException("El restaurante no existe");
-        }
+        restaurantPersistencePort.findRestaurantById(order.getRestaurantId())
+                .orElseThrow(() -> new RestaurantNotFoundException(order.getRestaurantId()));
 
         //Validamos que el cliente no tenga pedidos activos en este restaurante
         if (orderPersistencePort.existsActiveOrderByClientIdAndRestaurantId(
@@ -169,11 +168,11 @@ public class OrderUseCase implements IOrderServicePort {
             }
 
             //Obtenemos el plato
-            Dish dish = dishPersistencePort.findById(dishId)
-                    .orElseThrow(() -> new DishNotFoundException("Plato no encontrado: " + dishId));
+            Dish dish = dishPersistencePort.findDishById(dishId)
+                    .orElseThrow(() -> new DishNotFoundException(dishId));
 
             //Se verificar que el plato esté activo
-            if (!dish.isActive()) {
+            if (Boolean.FALSE.equals(dish.getActive())) {
                 throw new IllegalArgumentException("El plato no está disponible: " + dishId);
             }
 

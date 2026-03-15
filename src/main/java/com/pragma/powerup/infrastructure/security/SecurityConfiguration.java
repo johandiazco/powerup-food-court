@@ -38,8 +38,15 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/users/cliente").permitAll()
 
-                        //SWAGGER
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        //SWAGGER - PERMITIR ACCESO COMPLETO
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
 
                         //ADMIN ENDPOINTS
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/propietario").hasRole("ADMIN")

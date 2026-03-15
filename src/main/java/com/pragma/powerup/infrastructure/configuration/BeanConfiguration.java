@@ -1,5 +1,6 @@
 package com.pragma.powerup.infrastructure.configuration;
 
+import com.pragma.powerup.domain.api.IAuthenticationService;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.api.IOrderServicePort;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
@@ -9,6 +10,7 @@ import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.IUserPersistencePort;
+import com.pragma.powerup.domain.usecase.AuthenticationUseCase;
 import com.pragma.powerup.domain.usecase.DishUseCase;
 import com.pragma.powerup.domain.usecase.OrderUseCase;
 import com.pragma.powerup.domain.usecase.RestaurantUseCase;
@@ -28,9 +30,12 @@ import com.pragma.powerup.infrastructure.out.jpa.repository.IDishRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IOrderRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IRestaurantRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IUserRepository;
+import com.pragma.powerup.infrastructure.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
@@ -42,7 +47,6 @@ public class BeanConfiguration {
     private final IDishRepository dishRepository;
     private final IDishEntityMapper dishEntityMapper;
     private final ICategoryRepository categoryRepository;
-    private final ICategoryEntityMapper categoryEntityMapper;
     private final IUserRepository userRepository;
     private final IUserEntityMapper userEntityMapper;
     private final IOrderRepository orderRepository;
@@ -63,7 +67,7 @@ public class BeanConfiguration {
     //CATEGORY BEANS
     @Bean
     public ICategoryPersistencePort categoryPersistencePort() {
-        return new CategoryJpaAdapter(categoryRepository, categoryEntityMapper);
+        return new CategoryJpaAdapter(categoryRepository);
     }
 
     //DISH BEANS
@@ -77,7 +81,7 @@ public class BeanConfiguration {
         return new DishUseCase(
                 dishPersistencePort(),
                 restaurantPersistencePort(),
-                null  // categoryPersistencePort() - TEMPORAL
+                categoryPersistencePort()
         );
     }
 
@@ -90,6 +94,20 @@ public class BeanConfiguration {
     @Bean
     public IUserServicePort userServicePort() {
         return new UserUseCase(userPersistencePort());
+    }
+
+    //AUTHENTICATION BEANS HU-5
+    @Bean
+    public IAuthenticationService authenticationService(
+            AuthenticationManager authenticationManager,
+            UserDetailsService userDetailsService,
+            JwtService jwtService) {
+        return new AuthenticationUseCase(
+                authenticationManager,
+                userDetailsService,
+                jwtService,
+                userPersistencePort()
+        );
     }
 
     //ORDER BEANS HU-11

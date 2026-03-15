@@ -8,12 +8,12 @@ import com.pragma.powerup.application.mapper.IObjectResponseMapper;
 import com.pragma.powerup.domain.api.IObjectServicePort;
 import com.pragma.powerup.domain.model.ObjectModel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+//import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
+//@Service
 @RequiredArgsConstructor
 @Transactional
 public class ObjectHandler implements IObjectHandler {
