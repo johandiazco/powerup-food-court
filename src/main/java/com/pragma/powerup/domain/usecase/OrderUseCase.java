@@ -18,12 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
+import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 @Slf4j
 public class OrderUseCase implements IOrderServicePort {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final IOrderPersistencePort orderPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
@@ -238,7 +241,7 @@ public class OrderUseCase implements IOrderServicePort {
                     user != null ? user.getRol().name() : "SYSTEM"
             );
         } catch (Exception e) {
-            log.error("❌ Error al registrar trazabilidad para pedido {}: {}", orderId, e.getMessage());
+            log.error("Error al registrar trazabilidad para pedido {}: {}", orderId, e.getMessage());
             //NO lanzamos excepción para no afectar flujo principal
         }
     }

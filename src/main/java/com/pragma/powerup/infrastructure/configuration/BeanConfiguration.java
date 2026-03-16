@@ -2,24 +2,28 @@ package com.pragma.powerup.infrastructure.configuration;
 
 import com.pragma.powerup.domain.api.IAuthenticationService;
 import com.pragma.powerup.domain.api.IDishServicePort;
+import com.pragma.powerup.domain.api.IEmployeeEfficiencyServicePort;
 import com.pragma.powerup.domain.api.IOrderServicePort;
 import com.pragma.powerup.domain.api.IOrderTraceServicePort;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
 import com.pragma.powerup.domain.api.IUserServicePort;
 import com.pragma.powerup.domain.spi.ICategoryPersistencePort;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
+import com.pragma.powerup.domain.spi.IEfficiencyMetricsPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderTracePersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.IUserPersistencePort;
 import com.pragma.powerup.domain.usecase.AuthenticationUseCase;
 import com.pragma.powerup.domain.usecase.DishUseCase;
+import com.pragma.powerup.domain.usecase.EmployeeEfficiencyUseCase;
 import com.pragma.powerup.domain.usecase.OrderTraceUseCase;
 import com.pragma.powerup.domain.usecase.OrderUseCase;
 import com.pragma.powerup.domain.usecase.RestaurantUseCase;
 import com.pragma.powerup.domain.usecase.UserUseCase;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.CategoryJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.DishJpaAdapter;
+import com.pragma.powerup.infrastructure.out.jpa.adapter.EfficiencyMetricsJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.OrderJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.RestaurantJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.UserJpaAdapter;
@@ -133,6 +137,21 @@ public class BeanConfiguration {
                 dishPersistencePort(),
                 traceServicePort,
                 userPersistencePort()
+        );
+    }
+
+    //EFFICIENCY BEANS HU-18
+    @Bean
+    public IEfficiencyMetricsPersistencePort efficiencyMetricsPersistencePort() {
+        return new EfficiencyMetricsJpaAdapter(orderRepository);
+    }
+
+    @Bean
+    public IEmployeeEfficiencyServicePort employeeEfficiencyServicePort() {
+        return new EmployeeEfficiencyUseCase(
+                efficiencyMetricsPersistencePort(),
+                userPersistencePort(),
+                restaurantPersistencePort()
         );
     }
 }

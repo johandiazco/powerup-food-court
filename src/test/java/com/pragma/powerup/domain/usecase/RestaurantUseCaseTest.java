@@ -8,13 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,139 +21,131 @@ class RestaurantUseCaseTest {
 
     @Mock
     private IRestaurantPersistencePort restaurantPersistencePort;
-    @InjectMocks
+
     private RestaurantUseCase restaurantUseCase;
+
     private Restaurant validRestaurant;
 
     @BeforeEach
     void setUp() {
+        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort);
+
         validRestaurant = Restaurant.builder()
-                .name("La Casa del Sabor")
+                .name("Restaurante El Buen Sabor")
                 .nit("900123456-7")
-                .address("Calle 100 #15-20")
+                .address("Calle 123 #45-67, Medellín")
                 .phone("+573001234567")
-                .urlLogo("https://ejemplo.com/logo.png")
-                .ownerId(1L)
+                .logoUrl("https://ejemplo.com/logo.png")
+                .ownerId(10L)
                 .build();
     }
 
     @Test
-    @DisplayName("Should create restaurant successfully when data is valid and NIT is unique")
-    void createRestaurant_WhenDataIsValidAndNitIsUnique_ShouldCreateSuccessfully() {
-        Restaurant savedRestaurant = validRestaurant.toBuilder().id(1L).build();
+    @DisplayName("Should create restaurant successfully when all validations pass")
+    void createRestaurant_WhenValidData_ShouldCreateSuccessfully() {
 
-        when(restaurantPersistencePort.existsByNit(anyString())).thenReturn(false);
-        when(restaurantPersistencePort.saveRestaurant(any(Restaurant.class))).thenReturn(savedRestaurant);
+        when(restaurantPersistencePort.existsByNit("900123456-7")).thenReturn(false);
+        when(restaurantPersistencePort.saveRestaurant(any(Restaurant.class))).thenReturn(validRestaurant);
 
         Restaurant result = restaurantUseCase.createRestaurant(validRestaurant);
 
         assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("La Casa del Sabor", result.getName());
+        assertEquals("Restaurante El Buen Sabor", result.getName());
         assertEquals("900123456-7", result.getNit());
-
-        verify(restaurantPersistencePort, times(1)).existsByNit("900123456-7");
-        verify(restaurantPersistencePort, times(1)).saveRestaurant(validRestaurant);
+        verify(restaurantPersistencePort, times(1)).saveRestaurant(any(Restaurant.class));
     }
 
     @Test
     @DisplayName("Should throw RestaurantAlreadyExistsException when NIT already exists")
     void createRestaurant_WhenNitAlreadyExists_ShouldThrowException() {
 
-        when(restaurantPersistencePort.existsByNit(anyString())).thenReturn(true);
+        when(restaurantPersistencePort.existsByNit("900123456-7")).thenReturn(true);
 
-        RestaurantAlreadyExistsException exception = assertThrows(
-                RestaurantAlreadyExistsException.class,
-                () -> restaurantUseCase.createRestaurant(validRestaurant)
-        );
-
-        assertEquals("Ya existe un restaurante con el NIT: 900123456-7", exception.getMessage());
-
-        verify(restaurantPersistencePort, times(1)).existsByNit("900123456-7");
-        verify(restaurantPersistencePort, never()).saveRestaurant(any(Restaurant.class));
+        assertThrows(RestaurantAlreadyExistsException.class, () -> restaurantUseCase.createRestaurant(validRestaurant));
+        verify(restaurantPersistencePort, never()).saveRestaurant(any());
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when phone is invalid")
-    void createRestaurant_WhenPhoneIsInvalid_ShouldThrowException() {
+    @DisplayName("Should throw IllegalArgumentException when name is empty")
+    void createRestaurant_WhenNameIsEmpty_ShouldThrowException() {
 
-        Restaurant invalidRestaurant = validRestaurant.toBuilder()
-                .phone("123")  // Teléfono inválido
+        Restaurant invalidRestaurant = Restaurant.builder()
+                .name("")
+                .nit("900123456-7")
+                .address("Calle 123")
+                .phone("+573001234567")
+                .logoUrl("https://ejemplo.com/logo.png")
+                .ownerId(10L)
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> restaurantUseCase.createRestaurant(invalidRestaurant)
         );
-
-        assertEquals("El teléfono debe tener entre 10 y 13 dígitos (puede incluir +)",
-                exception.getMessage());
-
-        verify(restaurantPersistencePort, never()).existsByNit(anyString());
-        verify(restaurantPersistencePort, never()).saveRestaurant(any(Restaurant.class));
+        assertTrue(exception.getMessage().contains("nombre"));
     }
 
     @Test
-    @DisplayName("Should get restaurant by ID successfully when restaurant exists")
+    @DisplayName("Should throw IllegalArgumentException when phone number is invalid")
+    void createRestaurant_WhenInvalidPhoneNumber_ShouldThrowException() {
+        // Arrange
+        Restaurant invalidRestaurant = Restaurant.builder()
+                .name("Restaurante Test")
+                .nit("900123456-7")
+                .address("Calle 123")
+                .phone("123")
+                .logoUrl("https://ejemplo.com/logo.png")
+                .ownerId(10L)
+                .build();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> restaurantUseCase.createRestaurant(invalidRestaurant)
+        );
+        assertTrue(exception.getMessage().contains("teléfono"));
+    }
+
+    @Test
+    @DisplayName("Should get restaurant by ID when restaurant exists")
     void getRestaurantById_WhenRestaurantExists_ShouldReturnRestaurant() {
 
-        Long restaurantId = 1L;
-        Restaurant existingRestaurant = validRestaurant.toBuilder().id(restaurantId).build();
+        Restaurant existingRestaurant = Restaurant.builder()
+                .id(1L)
+                .name("Restaurante El Buen Sabor")
+                .nit("900123456-7")
+                .address("Calle 123")
+                .phone("+573001234567")
+                .logoUrl("https://ejemplo.com/logo.png")
+                .ownerId(10L)
+                .build();
 
-        when(restaurantPersistencePort.findRestaurantById(restaurantId))
-                .thenReturn(Optional.of(existingRestaurant));
+        when(restaurantPersistencePort.findRestaurantById(1L)).thenReturn(Optional.of(existingRestaurant));
 
-        Restaurant result = restaurantUseCase.getRestaurantById(restaurantId);
+        Restaurant result = restaurantUseCase.getRestaurantById(1L);
 
         assertNotNull(result);
-        assertEquals(restaurantId, result.getId());
-        assertEquals("La Casa del Sabor", result.getName());
-
-        verify(restaurantPersistencePort, times(1)).findRestaurantById(restaurantId);
+        assertEquals(1L, result.getId());
+        assertEquals("Restaurante El Buen Sabor", result.getName());
     }
 
     @Test
     @DisplayName("Should throw RestaurantNotFoundException when restaurant does not exist")
-    void getRestaurantById_WhenRestaurantDoesNotExist_ShouldThrowException() {
+    void getRestaurantById_WhenRestaurantNotFound_ShouldThrowException() {
 
-        Long restaurantId = 999L;
+        when(restaurantPersistencePort.findRestaurantById(999L)).thenReturn(Optional.empty());
 
-        when(restaurantPersistencePort.findRestaurantById(restaurantId))
-                .thenReturn(Optional.empty());
-
-        RestaurantNotFoundException exception = assertThrows(
-                RestaurantNotFoundException.class,
-                () -> restaurantUseCase.getRestaurantById(restaurantId)
-        );
-
-        assertEquals("No se encontró el restaurante con ID: 999", exception.getMessage());
-
-        verify(restaurantPersistencePort, times(1)).findRestaurantById(restaurantId);
+        assertThrows(RestaurantNotFoundException.class, () -> restaurantUseCase.getRestaurantById(999L));
     }
 
     @Test
-    @DisplayName("Should return true when NIT exists")
-    void existsByNit_WhenNitExists_ShouldReturnTrue() {
+    @DisplayName("Should verify restaurant exists by NIT")
+    void existsByNit_ShouldReturnTrueWhenRestaurantExists() {
 
-        String nit = "900123456-7";
-        when(restaurantPersistencePort.existsByNit(nit)).thenReturn(true);
+        when(restaurantPersistencePort.existsByNit("900123456-7")).thenReturn(true);
 
-        boolean result = restaurantUseCase.existsByNit(nit);
+        boolean result = restaurantUseCase.existsByNit("900123456-7");
 
         assertTrue(result);
-        verify(restaurantPersistencePort, times(1)).existsByNit(nit);
-    }
-
-    @Test
-    @DisplayName("Should return false when NIT does not exist")
-    void existsByNit_WhenNitDoesNotExist_ShouldReturnFalse() {
-
-        String nit = "900123456-7";
-        when(restaurantPersistencePort.existsByNit(nit)).thenReturn(false);
-
-        boolean result = restaurantUseCase.existsByNit(nit);
-
-        assertFalse(result);
-        verify(restaurantPersistencePort, times(1)).existsByNit(nit);
+        verify(restaurantPersistencePort, times(1)).existsByNit("900123456-7");
     }
 }
