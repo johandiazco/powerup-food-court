@@ -1,9 +1,14 @@
 package com.pragma.powerup.infrastructure.exceptionhandler;
 
+import com.pragma.powerup.domain.exception.ActiveOrderExistsException;
 import com.pragma.powerup.domain.exception.CategoryNotFoundException;
 import com.pragma.powerup.domain.exception.DishNotFoundException;
+import com.pragma.powerup.domain.exception.DomainException;
+import com.pragma.powerup.domain.exception.InvalidOrderOperationException;
+import com.pragma.powerup.domain.exception.OrderNotFoundException;
 import com.pragma.powerup.domain.exception.RestaurantAlreadyExistsException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
+import com.pragma.powerup.domain.exception.UnauthorizedAccessException;
 import com.pragma.powerup.domain.exception.UserAlreadyExistsException;
 import com.pragma.powerup.domain.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -25,96 +30,98 @@ public class ControllerAdvisor {
     private static final String MESSAGE = "message";
     private static final String TIMESTAMP = "timestamp";
 
-    //AUTHENTICATION EXCEPTIONS HU-5
+    // AUTHENTICATION EXCEPTIONS
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentialsException(
             BadCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuthenticationException(
             AuthenticationException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        MESSAGE, "Error de autenticación: " + ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Error de autenticación: " + ex.getMessage());
     }
 
-    //USER EXCEPTIONS HU-1, HU-6, HU-8
+    // AUTHORIZATION EXCEPTIONS
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedAccessException(
+            UnauthorizedAccessException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    // USER EXCEPTIONS
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleUserNotFoundException(
             UserNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(
             UserAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    //RESTAURANT EXCEPTIONS HU-2
+    // RESTAURANT EXCEPTIONS
     @ExceptionHandler(RestaurantNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleRestaurantNotFoundException(
             RestaurantNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(RestaurantAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleRestaurantAlreadyExistsException(
             RestaurantAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    //DISH EXCEPTIONS HU-3, HU-4
+    // DISH EXCEPTIONS
     @ExceptionHandler(DishNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleDishNotFoundException(
             DishNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(CategoryNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleCategoryNotFoundException(
             CategoryNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    //VALIDATION EXCEPTIONS
+    // ORDER EXCEPTIONS
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleOrderNotFoundException(
+            OrderNotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(ActiveOrderExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleActiveOrderExistsException(
+            ActiveOrderExistsException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidOrderOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidOrderOperationException(
+            InvalidOrderOperationException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // DOMAIN EXCEPTIONS
+    @ExceptionHandler(DomainException.class)
+    public ResponseEntity<Map<String, Object>> handleDomainException(
+            DomainException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // VALIDATION EXCEPTIONS
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
+        // CORREGIDO: Eliminados paréntesis innecesarios (Problema 14)
+        ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
@@ -127,22 +134,22 @@ public class ControllerAdvisor {
                 ));
     }
 
-    //GENERIC EXCEPTIONS
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(
             IllegalArgumentException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        MESSAGE, ex.getMessage(),
-                        TIMESTAMP, LocalDateTime.now().toString()
-                ));
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Error interno del servidor: " + ex.getMessage());
+    }
+
+    private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
+        return ResponseEntity.status(status)
                 .body(Map.of(
-                        MESSAGE, "Error interno del servidor: " + ex.getMessage(),
+                        MESSAGE, message,
                         TIMESTAMP, LocalDateTime.now().toString()
                 ));
     }

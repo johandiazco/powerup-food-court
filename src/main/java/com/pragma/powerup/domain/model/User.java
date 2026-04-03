@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDate;
 import java.time.Period;
 
@@ -58,7 +59,8 @@ public class User {
         if (documentoIdentidad == null || documentoIdentidad.trim().isEmpty()) {
             throw new IllegalArgumentException("El documento de identidad es obligatorio");
         }
-        if (!documentoIdentidad.matches("^[0-9]+$")) {
+
+        if (!documentoIdentidad.matches("^\\d+$")) {
             throw new IllegalArgumentException("El documento de identidad debe ser únicamente numérico");
         }
         if (documentoIdentidad.length() > 20) {
@@ -70,7 +72,8 @@ public class User {
         if (celular == null || celular.trim().isEmpty()) {
             throw new IllegalArgumentException("El celular es obligatorio");
         }
-        if (!celular.matches("^\\+?[0-9]{10,13}$")) {
+
+        if (!celular.matches("^\\+?\\d{10,13}$")) {
             throw new IllegalArgumentException(
                     "El celular debe contener máximo 13 caracteres y puede contener el símbolo +"
             );
@@ -83,14 +86,14 @@ public class User {
         }
 
         LocalDate today = LocalDate.now();
-        int edad = Period.between(fechaNacimiento, today).getYears();
-
-        if (edad < 18) {
-            throw new IllegalArgumentException("El usuario debe ser mayor de edad (18 años o más)");
-        }
 
         if (fechaNacimiento.isAfter(today)) {
             throw new IllegalArgumentException("La fecha de nacimiento no puede ser futura");
+        }
+
+        int edad = Period.between(fechaNacimiento, today).getYears();
+        if (edad < 18) {
+            throw new IllegalArgumentException("El usuario debe ser mayor de edad (18 años o más)");
         }
     }
 
@@ -124,13 +127,10 @@ public class User {
         }
     }
 
-    //Verificamos si el usuario es >18
     public boolean isMayorDeEdad() {
         if (fechaNacimiento == null) {
             return false;
         }
-        LocalDate today = LocalDate.now();
-        int edad = Period.between(fechaNacimiento, today).getYears();
-        return edad >= 18;
+        return Period.between(fechaNacimiento, LocalDate.now()).getYears() >= 18;
     }
 }

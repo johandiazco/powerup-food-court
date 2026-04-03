@@ -9,5 +9,4 @@ class PowerUpApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

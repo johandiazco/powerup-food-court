@@ -4,6 +4,7 @@ import com.pragma.powerup.domain.exception.RestaurantAlreadyExistsException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
+import com.pragma.powerup.domain.spi.IUserPersistencePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import com.pragma.powerup.domain.model.User;
+import com.pragma.powerup.domain.model.Role;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Restaurant Use Case Tests")
@@ -22,13 +25,16 @@ class RestaurantUseCaseTest {
     @Mock
     private IRestaurantPersistencePort restaurantPersistencePort;
 
+    @Mock
+    private IUserPersistencePort userPersistencePort;
+
     private RestaurantUseCase restaurantUseCase;
 
     private Restaurant validRestaurant;
 
     @BeforeEach
     void setUp() {
-        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort);
+        restaurantUseCase = new RestaurantUseCase(restaurantPersistencePort, userPersistencePort);
 
         validRestaurant = Restaurant.builder()
                 .name("Restaurante El Buen Sabor")
@@ -44,6 +50,15 @@ class RestaurantUseCaseTest {
     @DisplayName("Should create restaurant successfully when all validations pass")
     void createRestaurant_WhenValidData_ShouldCreateSuccessfully() {
 
+        User ownerUser = User.builder()
+                .id(10L)
+                .nombre("Owner")
+                .apellido("Test")
+                .rol(Role.PROPIETARIO)
+                .build();
+
+        when(userPersistencePort.findUserById(10L)).thenReturn(Optional.of(ownerUser));
+
         when(restaurantPersistencePort.existsByNit("900123456-7")).thenReturn(false);
         when(restaurantPersistencePort.saveRestaurant(any(Restaurant.class))).thenReturn(validRestaurant);
 
@@ -58,6 +73,14 @@ class RestaurantUseCaseTest {
     @Test
     @DisplayName("Should throw RestaurantAlreadyExistsException when NIT already exists")
     void createRestaurant_WhenNitAlreadyExists_ShouldThrowException() {
+
+        User ownerUser = User.builder()
+                .id(10L)
+                .nombre("Owner")
+                .apellido("Test")
+                .rol(Role.PROPIETARIO)
+                .build();
+        when(userPersistencePort.findUserById(10L)).thenReturn(Optional.of(ownerUser));
 
         when(restaurantPersistencePort.existsByNit("900123456-7")).thenReturn(true);
 

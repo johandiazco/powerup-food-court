@@ -19,7 +19,6 @@ public class Restaurant {
     private String logoUrl;
     private Long ownerId;
 
-    //VALIDACIÓN EN EL DOMINIO
     public void validate() {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del restaurante es obligatorio");
@@ -33,7 +32,7 @@ public class Restaurant {
             throw new IllegalArgumentException("La dirección es obligatoria");
         }
 
-        if (phone == null || !phone.matches("^\\+?[0-9]{10,13}$")) {
+        if (phone == null || !phone.matches("^\\+?\\d{10,13}$")) {
             throw new IllegalArgumentException(
                     "El teléfono debe tener entre 10 y 13 dígitos (puede incluir +)"
             );

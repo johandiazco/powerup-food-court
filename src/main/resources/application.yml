@@ -1,22 +1,24 @@
 spring:
   application:
     name: plazoleta-restaurant-ms
-  #Configuracion PostgreSQL
+
+  # Configuracion PostgreSQL
+  # CORREGIDO: Credenciales movidas a variables de entorno (Problema 20, 31, 32)
   datasource:
-    url: jdbc:postgresql://localhost:5432/powerup_pragma
-    username: johandiaz
-    password:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:powerup_pragma}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   # MongoDB para trazabilidad HU-17
   data:
     mongodb:
-      uri: mongodb://localhost:27017/plazoleta_trazabilidad
+      uri: ${MONGODB_URI:mongodb://localhost:27017/plazoleta_trazabilidad}
       auto-index-creation: true
 
-  #Comfiguracion JPA
+  # Configuracion JPA
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: none
     properties:
@@ -33,12 +35,13 @@ server:
     include-message: always
     include-binding-errors: always
 
-#Configuracion JWT
+# Configuracion JWT
+# CORREGIDO: Secret movido a variable de entorno (Problema 20)
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-  expiration: 86400000 #24 horas en milisegundos
+  secret: ${JWT_SECRET:defaultDevSecretThatMustBeChangedInProduction0123456789}
+  expiration: ${JWT_EXPIRATION:86400000}
 
-#Configuracion OpenAPI
+# Configuracion OpenAPI
 springdoc:
   api-docs:
     path: /api-docs
@@ -51,8 +54,6 @@ logging:
     root: INFO
     com.pragma.powerup: DEBUG
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.security: DEBUG
 
 appDescription: "Pragma Powerup - Plaza de Comidas"
 appVersion: "1.0.0"

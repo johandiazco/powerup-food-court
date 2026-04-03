@@ -1,8 +1,9 @@
 package com.pragma.powerup.domain.spi;
 
 import com.pragma.powerup.domain.model.Dish;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.pragma.powerup.domain.model.DomainPage;
+import com.pragma.powerup.domain.model.PaginationParams;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -12,5 +13,5 @@ public interface IDishPersistencePort {
     List<Dish> findDishesByRestaurantId(Long restaurantId);
     boolean existsById(Long id);
     Dish updateDish(Dish dish);
-    Page<Dish> findActiveDishesByRestaurant(Long restaurantId, Long categoryId, Pageable pageable);
+    DomainPage<Dish> findActiveDishesByRestaurant(Long restaurantId, Long categoryId, PaginationParams params);
 }

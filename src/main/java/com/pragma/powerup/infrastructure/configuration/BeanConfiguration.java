@@ -7,6 +7,7 @@ import com.pragma.powerup.domain.api.IOrderServicePort;
 import com.pragma.powerup.domain.api.IOrderTraceServicePort;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
 import com.pragma.powerup.domain.api.IUserServicePort;
+import com.pragma.powerup.domain.spi.IAuthenticationPort;
 import com.pragma.powerup.domain.spi.ICategoryPersistencePort;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IEfficiencyMetricsPersistencePort;
@@ -27,7 +28,6 @@ import com.pragma.powerup.infrastructure.out.jpa.adapter.EfficiencyMetricsJpaAda
 import com.pragma.powerup.infrastructure.out.jpa.adapter.OrderJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.RestaurantJpaAdapter;
 import com.pragma.powerup.infrastructure.out.jpa.adapter.UserJpaAdapter;
-import com.pragma.powerup.infrastructure.out.jpa.mapper.ICategoryEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.mapper.IDishEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.mapper.IOrderEntityMapper;
 import com.pragma.powerup.infrastructure.out.jpa.mapper.IRestaurantEntityMapper;
@@ -37,12 +37,9 @@ import com.pragma.powerup.infrastructure.out.jpa.repository.IDishRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IOrderRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IRestaurantRepository;
 import com.pragma.powerup.infrastructure.out.jpa.repository.IUserRepository;
-import com.pragma.powerup.infrastructure.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 @RequiredArgsConstructor
@@ -58,27 +55,42 @@ public class BeanConfiguration {
     private final IOrderRepository orderRepository;
     private final IOrderEntityMapper orderEntityMapper;
 
-    //RESTAURANT BEANS
+    // PERSISTENCE PORTS
     @Bean
     public IRestaurantPersistencePort restaurantPersistencePort() {
         return new RestaurantJpaAdapter(restaurantRepository, restaurantEntityMapper);
     }
 
     @Bean
-    public IRestaurantServicePort restaurantServicePort() {
-        return new RestaurantUseCase(restaurantPersistencePort());
-    }
-
-    //CATEGORY BEANS
-    @Bean
     public ICategoryPersistencePort categoryPersistencePort() {
         return new CategoryJpaAdapter(categoryRepository);
     }
 
-    //DISH BEANS
     @Bean
     public IDishPersistencePort dishPersistencePort() {
         return new DishJpaAdapter(dishRepository, dishEntityMapper);
+    }
+
+    @Bean
+    public IUserPersistencePort userPersistencePort() {
+        return new UserJpaAdapter(userRepository, userEntityMapper);
+    }
+
+    @Bean
+    public IOrderPersistencePort orderPersistencePort() {
+        return new OrderJpaAdapter(orderRepository, orderEntityMapper);
+    }
+
+    @Bean
+    public IEfficiencyMetricsPersistencePort efficiencyMetricsPersistencePort() {
+        return new EfficiencyMetricsJpaAdapter(orderRepository);
+    }
+
+    // SERVICE PORTS (UseCases)
+    @Bean
+    public IRestaurantServicePort restaurantServicePort() {
+        // CORREGIDO: Ahora recibe userPersistencePort para validar rol del owner (HU-2)
+        return new RestaurantUseCase(restaurantPersistencePort(), userPersistencePort());
     }
 
     @Bean
@@ -90,42 +102,24 @@ public class BeanConfiguration {
         );
     }
 
-    //USER BEANS
-    @Bean
-    public IUserPersistencePort userPersistencePort() {
-        return new UserJpaAdapter(userRepository, userEntityMapper);
-    }
-
     @Bean
     public IUserServicePort userServicePort() {
         return new UserUseCase(userPersistencePort());
     }
 
-    //AUTHENTICATION BEANS HU-5
     @Bean
     public IAuthenticationService authenticationService(
-            AuthenticationManager authenticationManager,
-            UserDetailsService userDetailsService,
-            JwtService jwtService) {
+            IAuthenticationPort authenticationPort) {
         return new AuthenticationUseCase(
-                authenticationManager,
-                userDetailsService,
-                jwtService,
+                authenticationPort,
                 userPersistencePort()
         );
     }
 
-    //ORDER TRACE BEANS HU-17
     @Bean
     public IOrderTraceServicePort orderTraceServicePort(
             IOrderTracePersistencePort tracePersistencePort) {
         return new OrderTraceUseCase(tracePersistencePort);
-    }
-
-    //ORDER BEANS HU-11
-    @Bean
-    public IOrderPersistencePort orderPersistencePort() {
-        return new OrderJpaAdapter(orderRepository, orderEntityMapper);
     }
 
     @Bean
@@ -138,12 +132,6 @@ public class BeanConfiguration {
                 traceServicePort,
                 userPersistencePort()
         );
-    }
-
-    //EFFICIENCY BEANS HU-18
-    @Bean
-    public IEfficiencyMetricsPersistencePort efficiencyMetricsPersistencePort() {
-        return new EfficiencyMetricsJpaAdapter(orderRepository);
     }
 
     @Bean

@@ -8,30 +8,30 @@ import com.pragma.powerup.domain.exception.InvalidOrderOperationException;
 import com.pragma.powerup.domain.exception.OrderNotFoundException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
 import com.pragma.powerup.domain.model.Dish;
+import com.pragma.powerup.domain.model.DomainPage;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderStatus;
+import com.pragma.powerup.domain.model.PaginationParams;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.domain.spi.IUserPersistencePort;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import java.time.LocalDateTime;
+
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
-@Slf4j
 public class OrderUseCase implements IOrderServicePort {
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int PIN_BOUND = 900000;
+    private static final int PIN_BASE = 100000;
 
     private final IOrderPersistencePort orderPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IDishPersistencePort dishPersistencePort;
-    private final IOrderTraceServicePort traceService; // HU-17
+    private final IOrderTraceServicePort traceService;
     private final IUserPersistencePort userPersistencePort;
 
     public OrderUseCase(
@@ -39,8 +39,7 @@ public class OrderUseCase implements IOrderServicePort {
             IRestaurantPersistencePort restaurantPersistencePort,
             IDishPersistencePort dishPersistencePort,
             IOrderTraceServicePort traceService,
-            IUserPersistencePort userPersistencePort
-    ) {
+            IUserPersistencePort userPersistencePort) {
         this.orderPersistencePort = orderPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
@@ -50,33 +49,17 @@ public class OrderUseCase implements IOrderServicePort {
 
     @Override
     public Order createOrder(Order order) {
-        //Validamos que el restaurante exista
-        restaurantPersistencePort.findRestaurantById(order.getRestaurantId())
-                .orElseThrow(() -> new RestaurantNotFoundException(order.getRestaurantId()));
-
-        //Validamos que el cliente no tenga pedidos activos en este restaurante
-        if (orderPersistencePort.existsActiveOrderByClientIdAndRestaurantId(
-                order.getClientId(), order.getRestaurantId())) {
-            throw new ActiveOrderExistsException(
-                    "El cliente ya tiene un pedido activo en este restaurante");
-        }
-
-        //Validamos el pedido completo
+        validateRestaurantExists(order.getRestaurantId());
+        validateNoActiveOrder(order.getClientId(), order.getRestaurantId());
         order.validate();
-
-        //Validamos que todos los platos existan, esten activos y pertenescan al restaurante
         validateDishes(order);
 
-        //Establecemos valores por defecto
         order.setDate(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDIENTE);
         order.setChefId(null);
         order.setSecurityPin(null);
 
-        //Se guardar pedido
         Order savedOrder = orderPersistencePort.saveOrder(order);
-
-        //Registramos trazabilidad - estado inicial - HU-17
         registerTrace(savedOrder.getId(), null, OrderStatus.PENDIENTE, order.getClientId());
 
         return savedOrder;
@@ -89,16 +72,13 @@ public class OrderUseCase implements IOrderServicePort {
     }
 
     @Override
-    public Page<Order> getOrdersByRestaurantAndStatus(
-            Long restaurantId, OrderStatus status, Pageable pageable) {
-        //Listamos pedidos por restaurante y estado con paginación - hu12
-        return orderPersistencePort.findOrdersByRestaurantAndStatus(
-                restaurantId, status, pageable);
+    public DomainPage<Order> getOrdersByRestaurantAndStatus(
+            Long restaurantId, OrderStatus status, PaginationParams params) {
+        return orderPersistencePort.findOrdersByRestaurantAndStatus(restaurantId, status, params);
     }
 
     @Override
     public void assignOrderToChef(Long orderId, Long chefId) {
-        //Asignamos pedido a empleado - hu13
         Order order = getOrderById(orderId);
 
         if (!order.canBeAssigned()) {
@@ -107,19 +87,15 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         OrderStatus previousStatus = order.getStatus();
-
         order.setChefId(chefId);
         order.setStatus(OrderStatus.EN_PREPARACION);
-
         orderPersistencePort.saveOrder(order);
 
-        //Registramos trazabilidad -HU-17
         registerTrace(orderId, previousStatus, OrderStatus.EN_PREPARACION, chefId);
     }
 
     @Override
     public void markOrderAsReady(Long orderId, Long chefId) {
-        //Notificamos pedido listo - hu14
         Order order = getOrderById(orderId);
 
         if (!order.canBeMarkedAsReady()) {
@@ -133,21 +109,15 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         OrderStatus previousStatus = order.getStatus();
-
-        //Generamos PIN de seguridad - hu14
-        String securityPin = generateSecurityPin();
-        order.setSecurityPin(securityPin);
+        order.setSecurityPin(generateSecurityPin());
         order.setStatus(OrderStatus.LISTO);
-
         orderPersistencePort.saveOrder(order);
 
-        //Registramos trazabilidad -HU-17
         registerTrace(orderId, previousStatus, OrderStatus.LISTO, chefId);
     }
 
     @Override
     public void deliverOrder(Long orderId, String securityPin) {
-        //Entregamos pedido - hu15
         Order order = getOrderById(orderId);
 
         if (!order.canBeDelivered()) {
@@ -160,18 +130,14 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         OrderStatus previousStatus = order.getStatus();
-
         order.setStatus(OrderStatus.ENTREGADO);
-
         orderPersistencePort.saveOrder(order);
 
-        //Registramos trazabilidad -HU-17
         registerTrace(orderId, previousStatus, OrderStatus.ENTREGADO, order.getChefId());
     }
 
     @Override
     public void cancelOrder(Long orderId, Long clientId) {
-        //Cancelamos pedido - hu16
         Order order = getOrderById(orderId);
 
         if (!order.getClientId().equals(clientId)) {
@@ -185,13 +151,22 @@ public class OrderUseCase implements IOrderServicePort {
         }
 
         OrderStatus previousStatus = order.getStatus();
-
         order.setStatus(OrderStatus.CANCELADO);
-
         orderPersistencePort.saveOrder(order);
 
-        //Registramos trazabilidad -HU-17
         registerTrace(orderId, previousStatus, OrderStatus.CANCELADO, clientId);
+    }
+
+    private void validateRestaurantExists(Long restaurantId) {
+        restaurantPersistencePort.findRestaurantById(restaurantId)
+                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
+    }
+
+    private void validateNoActiveOrder(Long clientId, Long restaurantId) {
+        if (orderPersistencePort.existsActiveOrderByClientIdAndRestaurantId(clientId, restaurantId)) {
+            throw new ActiveOrderExistsException(
+                    "El cliente ya tiene un pedido activo en este restaurante");
+        }
     }
 
     private void validateDishes(Order order) {
@@ -200,21 +175,17 @@ public class OrderUseCase implements IOrderServicePort {
         order.getDishes().forEach(orderDish -> {
             Long dishId = orderDish.getDishId();
 
-            //Se verifican duplicados
             if (!dishIds.add(dishId)) {
                 throw new IllegalArgumentException("No se permiten platos duplicados en el pedido");
             }
 
-            //Obtenemos el plato
             Dish dish = dishPersistencePort.findDishById(dishId)
                     .orElseThrow(() -> new DishNotFoundException(dishId));
 
-            //Se verificar que el plato esté activo
             if (Boolean.FALSE.equals(dish.getActive())) {
                 throw new IllegalArgumentException("El plato no está disponible: " + dishId);
             }
 
-            //Verificamos que el plato pertenezca al restaurante
             if (!dish.getRestaurantId().equals(order.getRestaurantId())) {
                 throw new IllegalArgumentException(
                         "El plato " + dishId + " no pertenece al restaurante especificado");
@@ -223,8 +194,7 @@ public class OrderUseCase implements IOrderServicePort {
     }
 
     private String generateSecurityPin() {
-        Random random = new Random();
-        int pin = 100000 + random.nextInt(900000);
+        int pin = PIN_BASE + RANDOM.nextInt(PIN_BOUND);
         return String.valueOf(pin);
     }
 
@@ -241,8 +211,6 @@ public class OrderUseCase implements IOrderServicePort {
                     user != null ? user.getRol().name() : "SYSTEM"
             );
         } catch (Exception e) {
-            log.error("Error al registrar trazabilidad para pedido {}: {}", orderId, e.getMessage());
-            //NO lanzamos excepción para no afectar flujo principal
         }
     }
 }

@@ -61,17 +61,13 @@ public class EmployeeEfficiencyUseCase implements IEmployeeEfficiencyServicePort
     }
 
     private EmployeeEfficiency calculateEmployeeEfficiency(Long employeeId, Long restaurantId) {
-        //Obtenemos información del empleado
         User employee = userPort.findUserById(employeeId).orElse(null);
 
-        //Contamos pedidos completados
         Long completedOrders = metricsPort.countCompletedOrdersByEmployee(employeeId, restaurantId);
 
-        //Calculamos tiempo promedio de preparación
         Double avgTime = metricsPort.calculateAveragePreparationTime(employeeId, restaurantId);
 
-        //Creamos objeto de eficiencia
-        EmployeeEfficiency efficiency = EmployeeEfficiency.builder()
+        return EmployeeEfficiency.builder()
                 .employeeId(employeeId)
                 .employeeName(employee != null
                         ? employee.getNombre() + " " + employee.getApellido()
@@ -80,10 +76,5 @@ public class EmployeeEfficiencyUseCase implements IEmployeeEfficiencyServicePort
                 .completedOrders(completedOrders)
                 .averagePreparationTimeMinutes(avgTime != null ? avgTime : 0.0)
                 .build();
-
-        //Calculamos índice de eficiencia
-        efficiency.calculateEfficiency();
-
-        return efficiency;
     }
 }

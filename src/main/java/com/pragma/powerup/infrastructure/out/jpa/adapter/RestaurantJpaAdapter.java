@@ -1,5 +1,7 @@
 package com.pragma.powerup.infrastructure.out.jpa.adapter;
 
+import com.pragma.powerup.domain.model.DomainPage;
+import com.pragma.powerup.domain.model.PaginationParams;
 import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
 import com.pragma.powerup.infrastructure.out.jpa.entity.RestaurantEntity;
@@ -42,8 +44,9 @@ public class RestaurantJpaAdapter implements IRestaurantPersistencePort {
     }
 
     @Override
-    public Page<Restaurant> findAllRestaurants(Pageable pageable) {
+    public DomainPage<Restaurant> findAllRestaurants(PaginationParams params) {
+        Pageable pageable = PaginationMapper.toPageable(params);
         Page<RestaurantEntity> entityPage = restaurantRepository.findAll(pageable);
-        return entityPage.map(restaurantEntityMapper::toDomain);
+        return PaginationMapper.toDomainPage(entityPage, restaurantEntityMapper::toDomain);
     }
 }

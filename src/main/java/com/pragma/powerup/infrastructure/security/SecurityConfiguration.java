@@ -25,6 +25,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
+    private static final String ROLE_PROPIETARIO = "PROPIETARIO";
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_EMPLEADO = "EMPLEADO";
+
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
@@ -34,11 +38,11 @@ public class SecurityConfiguration {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        //ENDPOINTS PÚBLICOS
+                        // ENDPOINTS PÚBLICOS
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/users/cliente").permitAll()
 
-                        //SWAGGER - PERMITIR ACCESO COMPLETO
+                        // SWAGGER
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -48,17 +52,17 @@ public class SecurityConfiguration {
                                 "/webjars/**"
                         ).permitAll()
 
-                        //ADMIN ENDPOINTS
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users/propietario").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/restaurants").hasRole("ADMIN")
+                        // ADMIN ENDPOINTS
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/propietario").hasRole(ROLE_ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/restaurants").hasRole(ROLE_ADMIN)
 
-                        //PROPIETARIO ENDPOINTS
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users/empleado").hasRole("PROPIETARIO")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/dishes").hasRole("PROPIETARIO")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/dishes/**").hasRole("PROPIETARIO")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/dishes/**").hasRole("PROPIETARIO")
+                        // PROPIETARIO ENDPOINTS
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/empleado").hasRole(ROLE_PROPIETARIO)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/dishes").hasRole(ROLE_PROPIETARIO)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/dishes/**").hasRole(ROLE_PROPIETARIO)
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/dishes/**").hasRole(ROLE_PROPIETARIO)
 
-                        //RESTO DE ENDPOINTS REQUIEREN AUTENTICACIÓN
+                        // RESTO REQUIERE AUTENTICACIÓN
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

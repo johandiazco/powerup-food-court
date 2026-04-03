@@ -8,14 +8,13 @@ import com.pragma.powerup.application.mapper.IRestaurantListResponseMapper;
 import com.pragma.powerup.application.mapper.IRestaurantRequestMapper;
 import com.pragma.powerup.application.mapper.IRestaurantResponseMapper;
 import com.pragma.powerup.domain.api.IRestaurantServicePort;
+import com.pragma.powerup.domain.model.DomainPage;
+import com.pragma.powerup.domain.model.PaginationParams;
 import com.pragma.powerup.domain.model.Restaurant;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -43,21 +42,21 @@ public class RestaurantHandler implements IRestaurantHandler {
 
     @Override
     public PageableResponseDto<RestaurantListResponseDto> getAllRestaurants(int page, int size) {
-        //Creamos Pageable con ordenamiento alfabético por nombre
-        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        // Creamos params del dominio (ordenamiento alfabético por nombre - HU-9)
+        PaginationParams params = new PaginationParams(page, size, "name", true);
 
-        //Ejecutamos búsqueda paginada
-        Page<Restaurant> restaurantPage = restaurantServicePort.getAllRestaurants(pageable);
+        // Delegamos al UseCase
+        DomainPage<Restaurant> restaurantPage = restaurantServicePort.getAllRestaurants(params);
 
-        //Convertimos a DTOs "solo nombre y logo - según HU-9"
+        // Convertimos resultado a DTOs
         List<RestaurantListResponseDto> restaurantDtos =
                 restaurantListResponseMapper.toListResponseDtoList(restaurantPage.getContent());
 
-        //Construimos respuesta paginada
+        // Construimos respuesta paginada
         PageableResponseDto<RestaurantListResponseDto> response = new PageableResponseDto<>();
         response.setContent(restaurantDtos);
-        response.setPageNumber(restaurantPage.getNumber());
-        response.setPageSize(restaurantPage.getSize());
+        response.setPageNumber(restaurantPage.getPageNumber());
+        response.setPageSize(restaurantPage.getPageSize());
         response.setTotalElements(restaurantPage.getTotalElements());
         response.setTotalPages(restaurantPage.getTotalPages());
         response.setFirst(restaurantPage.isFirst());

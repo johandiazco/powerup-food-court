@@ -21,6 +21,7 @@ public class Dish {
     private Long categoryId;
     private Long restaurantId;
     private Boolean active;
+    private Long ownerId;
 
     public void validate() {
         if (name == null || name.trim().isEmpty()) {
@@ -59,7 +60,6 @@ public class Dish {
             throw new IllegalArgumentException("El restaurante es obligatorio");
         }
 
-        //Si active es null, cambia a true por defecto
         if (active == null) {
             active = true;
         }

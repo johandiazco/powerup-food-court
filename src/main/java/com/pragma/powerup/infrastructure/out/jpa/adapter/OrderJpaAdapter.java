@@ -1,7 +1,9 @@
 package com.pragma.powerup.infrastructure.out.jpa.adapter;
 
+import com.pragma.powerup.domain.model.DomainPage;
 import com.pragma.powerup.domain.model.Order;
 import com.pragma.powerup.domain.model.OrderStatus;
+import com.pragma.powerup.domain.model.PaginationParams;
 import com.pragma.powerup.domain.spi.IOrderPersistencePort;
 import com.pragma.powerup.infrastructure.out.jpa.entity.OrderEntity;
 import com.pragma.powerup.infrastructure.out.jpa.entity.OrderStatusEntity;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+
 import java.util.Optional;
 
 @Component
@@ -24,7 +27,6 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     public Order saveOrder(Order order) {
         OrderEntity orderEntity = orderEntityMapper.toEntity(order);
 
-        //Establecemos relación bidireccional con los platos
         if (orderEntity.getDishes() != null) {
             orderEntity.getDishes().forEach(dish -> dish.setOrder(orderEntity));
         }
@@ -40,23 +42,20 @@ public class OrderJpaAdapter implements IOrderPersistencePort {
     }
 
     @Override
-    public Page<Order> findOrdersByRestaurantAndStatus(
-            Long restaurantId,
-            OrderStatus status,
-            Pageable pageable) {
+    public DomainPage<Order> findOrdersByRestaurantAndStatus(
+            Long restaurantId, OrderStatus status, PaginationParams params) {
+
         OrderStatusEntity statusEntity = OrderStatusEntity.valueOf(status.name());
+        Pageable pageable = PaginationMapper.toPageable(params);
 
         Page<OrderEntity> entities = orderRepository.findByRestaurantIdAndStatus(
                 restaurantId, statusEntity, pageable);
 
-        return entities.map(orderEntityMapper::toDomain);
+        return PaginationMapper.toDomainPage(entities, orderEntityMapper::toDomain);
     }
 
     @Override
-    public boolean existsActiveOrderByClientIdAndRestaurantId(
-            Long clientId,
-            Long restaurantId) {
-        return orderRepository.existsActiveOrderByClientIdAndRestaurantId(
-                clientId, restaurantId);
+    public boolean existsActiveOrderByClientIdAndRestaurantId(Long clientId, Long restaurantId) {
+        return orderRepository.existsActiveOrderByClientIdAndRestaurantId(clientId, restaurantId);
     }
 }

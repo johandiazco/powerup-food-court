@@ -18,20 +18,14 @@ public class EmployeeEfficiency {
     private String employeeEmail;
     private Long completedOrders;
     private Double averagePreparationTimeMinutes;
-    private Double efficiencyIndex;
 
-    public void calculateEfficiency() {
+    public Double getEfficiencyIndex() {
         if (completedOrders == null || completedOrders == 0) {
-            this.efficiencyIndex = 0.0;
-            return;
+            return 0.0;
         }
-
         if (averagePreparationTimeMinutes == null || averagePreparationTimeMinutes == 0) {
-            this.efficiencyIndex = 0.0;
-            return;
+            return 0.0;
         }
-
-        //Implementamos indice de eficiencia= más pedidos + menos tiempo = mayor eficiencia
-        this.efficiencyIndex = completedOrders / averagePreparationTimeMinutes;
+        return completedOrders / averagePreparationTimeMinutes;
     }
 }

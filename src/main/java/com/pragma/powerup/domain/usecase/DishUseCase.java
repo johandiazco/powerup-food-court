@@ -3,13 +3,18 @@ package com.pragma.powerup.domain.usecase;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.exception.CategoryNotFoundException;
 import com.pragma.powerup.domain.exception.DishNotFoundException;
+import com.pragma.powerup.domain.exception.DomainException;
 import com.pragma.powerup.domain.exception.RestaurantNotFoundException;
+import com.pragma.powerup.domain.exception.UnauthorizedAccessException;
 import com.pragma.powerup.domain.model.Dish;
+import com.pragma.powerup.domain.model.DomainPage;
+import com.pragma.powerup.domain.model.PaginationParams;
+import com.pragma.powerup.domain.model.Restaurant;
 import com.pragma.powerup.domain.spi.ICategoryPersistencePort;
 import com.pragma.powerup.domain.spi.IDishPersistencePort;
 import com.pragma.powerup.domain.spi.IRestaurantPersistencePort;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 public class DishUseCase implements IDishServicePort {
@@ -30,12 +35,11 @@ public class DishUseCase implements IDishServicePort {
     @Override
     public Dish createDish(Dish dish) {
         dish.validate();
+        validateRestaurantExists(dish.getRestaurantId());
+        validateCategoryExists(dish.getCategoryId());
 
-        restaurantPersistencePort.findRestaurantById(dish.getRestaurantId())
-                .orElseThrow(() -> new RestaurantNotFoundException(dish.getRestaurantId()));
-
-        if (!categoryPersistencePort.existsById(dish.getCategoryId())) {
-            throw new CategoryNotFoundException(dish.getCategoryId());
+        if (dish.getOwnerId() != null) {
+            validateOwnership(dish.getRestaurantId(), dish.getOwnerId());
         }
 
         return dishPersistencePort.saveDish(dish);
@@ -43,82 +47,86 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish getDishById(Long id) {
-        return dishPersistencePort.findDishById(id)
-                .orElseThrow(() -> new DishNotFoundException(id));
+        return findDishOrThrow(id);
     }
 
     @Override
     public List<Dish> getDishesByRestaurant(Long restaurantId) {
-        restaurantPersistencePort.findRestaurantById(restaurantId)
-                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
-
+        validateRestaurantExists(restaurantId);
         return dishPersistencePort.findDishesByRestaurantId(restaurantId);
     }
 
     @Override
     public Dish updateDish(Long id, Dish dishUpdates) {
-        Dish existingDish = dishPersistencePort.findDishById(id)
-                .orElseThrow(() -> new DishNotFoundException(id));
+        Dish existingDish = findDishOrThrow(id);
 
-        if (dishUpdates.getPrice() != null) {
-            if (dishUpdates.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("El precio debe ser mayor a cero");
-            }
-            existingDish.setPrice(dishUpdates.getPrice());
-        }
-
-        if (dishUpdates.getDescription() != null && !dishUpdates.getDescription().trim().isEmpty()) {
-            if (dishUpdates.getDescription().length() > 500) {
-                throw new IllegalArgumentException("La descripción no puede exceder 500 caracteres");
-            }
-            existingDish.setDescription(dishUpdates.getDescription());
-        }
-
-        if (dishUpdates.getName() != null && !dishUpdates.getName().trim().isEmpty()) {
-            if (dishUpdates.getName().length() > 100) {
-                throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
-            }
-            existingDish.setName(dishUpdates.getName());
-        }
-
-        if (dishUpdates.getImageUrl() != null && !dishUpdates.getImageUrl().trim().isEmpty()) {
-            if (!dishUpdates.getImageUrl().matches("^https?://.*")) {
-                throw new IllegalArgumentException("La URL de la imagen debe comenzar con http:// o https://");
-            }
-            existingDish.setImageUrl(dishUpdates.getImageUrl());
-        }
-
-        if (dishUpdates.getCategoryId() != null) {
-            if (!categoryPersistencePort.existsById(dishUpdates.getCategoryId())) {
-                throw new CategoryNotFoundException(dishUpdates.getCategoryId());
-            }
-            existingDish.setCategoryId(dishUpdates.getCategoryId());
-        }
+        updatePrice(existingDish, dishUpdates.getPrice());
+        updateDescription(existingDish, dishUpdates.getDescription());
 
         return dishPersistencePort.updateDish(existingDish);
     }
 
     @Override
     public Dish toggleDishStatus(Long id, Boolean active) {
-        Dish existingDish = dishPersistencePort.findDishById(id)
-                .orElseThrow(() -> new DishNotFoundException(id));
-
+        Dish existingDish = findDishOrThrow(id);
         existingDish.setActive(active);
-
         return dishPersistencePort.updateDish(existingDish);
     }
 
     @Override
-    public Page<Dish> getActiveDishesByRestaurant(Long restaurantId, Long categoryId, Pageable pageable) {
-        //Verificamos que el restaurante existe
-        restaurantPersistencePort.findRestaurantById(restaurantId)
-                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
+    public DomainPage<Dish> getActiveDishesByRestaurant(Long restaurantId, Long categoryId, PaginationParams params) {
+        validateRestaurantExists(restaurantId);
 
-        //Si se especifica categoría, verificar que exista
-        if (categoryId != null && !categoryPersistencePort.existsById(categoryId)) {
-            throw new CategoryNotFoundException(categoryId);
+        if (categoryId != null) {
+            validateCategoryExists(categoryId);
         }
 
-        return dishPersistencePort.findActiveDishesByRestaurant(restaurantId, categoryId, pageable);
+        return dishPersistencePort.findActiveDishesByRestaurant(restaurantId, categoryId, params);
+    }
+
+    private Dish findDishOrThrow(Long id) {
+        return dishPersistencePort.findDishById(id)
+                .orElseThrow(() -> new DishNotFoundException(id));
+    }
+
+    private void validateRestaurantExists(Long restaurantId) {
+        restaurantPersistencePort.findRestaurantById(restaurantId)
+                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
+    }
+
+    private void validateCategoryExists(Long categoryId) {
+        if (!categoryPersistencePort.existsById(categoryId)) {
+            throw new CategoryNotFoundException(categoryId);
+        }
+    }
+
+    private void validateOwnership(Long restaurantId, Long ownerId) {
+        Restaurant restaurant = restaurantPersistencePort.findRestaurantById(restaurantId)
+                .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
+
+        if (!restaurant.getOwnerId().equals(ownerId)) {
+            throw new UnauthorizedAccessException(
+                    "El usuario no es propietario de este restaurante");
+        }
+    }
+
+    private void updatePrice(Dish existingDish, BigDecimal newPrice) {
+        if (newPrice == null) {
+            return;
+        }
+        if (newPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a cero");
+        }
+        existingDish.setPrice(newPrice);
+    }
+
+    private void updateDescription(Dish existingDish, String newDescription) {
+        if (newDescription == null || newDescription.trim().isEmpty()) {
+            return;
+        }
+        if (newDescription.length() > 500) {
+            throw new IllegalArgumentException("La descripción no puede exceder 500 caracteres");
+        }
+        existingDish.setDescription(newDescription);
     }
 }

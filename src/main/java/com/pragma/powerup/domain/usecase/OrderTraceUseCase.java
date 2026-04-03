@@ -5,6 +5,7 @@ import com.pragma.powerup.domain.model.OrderTrace;
 import com.pragma.powerup.domain.spi.IOrderTracePersistencePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,9 +36,9 @@ public class OrderTraceUseCase implements IOrderTraceServicePort {
 
         trace.validate();
 
-        OrderTrace savedTrace = tracePort.saveTrace(trace);
+        tracePort.saveTrace(trace);
 
-        log.info("✅ Trazabilidad registrada - Pedido: {}, Estado: {} → {}, Usuario: {}",
+        log.info("Trazabilidad registrada - Pedido: {}, Estado: {} -> {}, Usuario: {}",
                 orderId, previousStatus, newStatus, userEmail);
     }
 
@@ -46,7 +47,6 @@ public class OrderTraceUseCase implements IOrderTraceServicePort {
         if (orderId == null) {
             throw new IllegalArgumentException("El ID del pedido es obligatorio");
         }
-
         return tracePort.findTracesByOrderId(orderId);
     }
 }

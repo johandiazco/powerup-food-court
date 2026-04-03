@@ -1,8 +1,8 @@
 package com.pragma.powerup.domain.api;
 
-import com.pragma.powerup.application.dto.request.LoginRequestDto;
-import com.pragma.powerup.application.dto.response.AuthResponseDto;
+import com.pragma.powerup.domain.model.AuthResult;
+import com.pragma.powerup.domain.model.LoginCommand;
 
 public interface IAuthenticationService {
-    AuthResponseDto login(LoginRequestDto loginRequest);
+    AuthResult login(LoginCommand loginCommand);
 }

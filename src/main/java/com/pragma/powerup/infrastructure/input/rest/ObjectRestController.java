@@ -16,11 +16,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-//@RestController
 @RequestMapping("/api/v1/object")
 @RequiredArgsConstructor
 public class ObjectRestController {
@@ -49,5 +47,4 @@ public class ObjectRestController {
     public ResponseEntity<List<ObjectResponseDto>> getAllObjects() {
         return ResponseEntity.ok(objectHandler.getAllObjects());
     }
-
 }

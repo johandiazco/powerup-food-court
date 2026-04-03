@@ -10,13 +10,12 @@ import com.pragma.powerup.application.mapper.IDishResponseMapper;
 import com.pragma.powerup.application.mapper.IUpdateDishRequestMapper;
 import com.pragma.powerup.domain.api.IDishServicePort;
 import com.pragma.powerup.domain.model.Dish;
+import com.pragma.powerup.domain.model.DomainPage;
+import com.pragma.powerup.domain.model.PaginationParams;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -73,26 +72,22 @@ public class DishHandler implements IDishHandler {
             String sortBy,
             String sortDirection) {
 
-        //Creamos Sort
-        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc")
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
-        Sort sort = Sort.by(direction, sortBy);
+        // Creamos params del dominio
+        boolean ascending = !"desc".equalsIgnoreCase(sortDirection);
+        PaginationParams params = new PaginationParams(page, size, sortBy, ascending);
 
-        //Creamos Pageable
-        Pageable pageable = PageRequest.of(page, size, sort);
+        // Delegamos al UseCase
+        DomainPage<Dish> dishPage = dishServicePort.getActiveDishesByRestaurant(
+                restaurantId, categoryId, params);
 
-        //Ejecutamos búsqueda paginada
-        Page<Dish> dishPage = dishServicePort.getActiveDishesByRestaurant(restaurantId, categoryId, pageable);
-
-        //Convertimos a DTOs
+        // Convertimos a DTOs
         List<DishResponseDto> dishDtos = responseMapper.toResponseDtoList(dishPage.getContent());
 
-        //Construimos respuesta paginada
+        // Construimos respuesta
         PageableResponseDto<DishResponseDto> response = new PageableResponseDto<>();
         response.setContent(dishDtos);
-        response.setPageNumber(dishPage.getNumber());
-        response.setPageSize(dishPage.getSize());
+        response.setPageNumber(dishPage.getPageNumber());
+        response.setPageSize(dishPage.getPageSize());
         response.setTotalElements(dishPage.getTotalElements());
         response.setTotalPages(dishPage.getTotalPages());
         response.setFirst(dishPage.isFirst());
