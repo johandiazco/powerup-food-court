@@ -22,6 +22,9 @@ public class AuthenticationUseCase implements IAuthenticationService {
 
     @Override
     public AuthResult login(LoginCommand loginCommand) {
+        // Validación de entrada en el UseCase (no en el modelo)
+        validateLoginInput(loginCommand);
+
         // Autenticamos las credenciales a través del puerto
         authenticationPort.authenticate(loginCommand.getCorreo(), loginCommand.getClave());
 
@@ -35,5 +38,14 @@ public class AuthenticationUseCase implements IAuthenticationService {
                 user.getId(),
                 user.getRol().name()
         );
+    }
+
+    private void validateLoginInput(LoginCommand loginCommand) {
+        if (loginCommand.getCorreo() == null || loginCommand.getCorreo().trim().isEmpty()) {
+            throw new DomainException("El correo es obligatorio para iniciar sesión");
+        }
+        if (loginCommand.getClave() == null || loginCommand.getClave().trim().isEmpty()) {
+            throw new DomainException("La clave es obligatoria para iniciar sesión");
+        }
     }
 }

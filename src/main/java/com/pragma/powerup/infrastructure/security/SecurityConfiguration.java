@@ -27,7 +27,6 @@ public class SecurityConfiguration {
 
     private static final String ROLE_PROPIETARIO = "PROPIETARIO";
     private static final String ROLE_ADMIN = "ADMIN";
-    private static final String ROLE_EMPLEADO = "EMPLEADO";
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
@@ -38,11 +37,8 @@ public class SecurityConfiguration {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // ENDPOINTS PÚBLICOS
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/users/cliente").permitAll()
-
-                        // SWAGGER
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -51,18 +47,12 @@ public class SecurityConfiguration {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-
-                        // ADMIN ENDPOINTS
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/propietario").hasRole(ROLE_ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/v1/restaurants").hasRole(ROLE_ADMIN)
-
-                        // PROPIETARIO ENDPOINTS
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/empleado").hasRole(ROLE_PROPIETARIO)
                         .requestMatchers(HttpMethod.POST, "/api/v1/dishes").hasRole(ROLE_PROPIETARIO)
                         .requestMatchers(HttpMethod.PUT, "/api/v1/dishes/**").hasRole(ROLE_PROPIETARIO)
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/dishes/**").hasRole(ROLE_PROPIETARIO)
-
-                        // RESTO REQUIERE AUTENTICACIÓN
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

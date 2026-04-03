@@ -34,12 +34,16 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish createDish(Dish dish) {
-        dish.validate();
-        validateRestaurantExists(dish.getRestaurantId());
-        validateCategoryExists(dish.getCategoryId());
+        verificarDatosPlato(dish);
+        verificarRestauranteExiste(dish.getRestaurantId());
+        verificarCategoriaExiste(dish.getCategoryId());
 
         if (dish.getOwnerId() != null) {
-            validateOwnership(dish.getRestaurantId(), dish.getOwnerId());
+            verificarPropiedadRestaurante(dish.getRestaurantId(), dish.getOwnerId());
+        }
+
+        if (dish.getActive() == null) {
+            dish.setActive(true);
         }
 
         return dishPersistencePort.saveDish(dish);
@@ -47,85 +51,114 @@ public class DishUseCase implements IDishServicePort {
 
     @Override
     public Dish getDishById(Long id) {
-        return findDishOrThrow(id);
+        return buscarPlatoOLanzar(id);
     }
 
     @Override
     public List<Dish> getDishesByRestaurant(Long restaurantId) {
-        validateRestaurantExists(restaurantId);
+        verificarRestauranteExiste(restaurantId);
         return dishPersistencePort.findDishesByRestaurantId(restaurantId);
     }
 
     @Override
     public Dish updateDish(Long id, Dish dishUpdates) {
-        Dish existingDish = findDishOrThrow(id);
+        Dish existingDish = buscarPlatoOLanzar(id);
 
-        updatePrice(existingDish, dishUpdates.getPrice());
-        updateDescription(existingDish, dishUpdates.getDescription());
+        actualizarPrecio(existingDish, dishUpdates.getPrice());
+        actualizarDescripcion(existingDish, dishUpdates.getDescription());
 
         return dishPersistencePort.updateDish(existingDish);
     }
 
     @Override
     public Dish toggleDishStatus(Long id, Boolean active) {
-        Dish existingDish = findDishOrThrow(id);
+        Dish existingDish = buscarPlatoOLanzar(id);
         existingDish.setActive(active);
         return dishPersistencePort.updateDish(existingDish);
     }
 
     @Override
     public DomainPage<Dish> getActiveDishesByRestaurant(Long restaurantId, Long categoryId, PaginationParams params) {
-        validateRestaurantExists(restaurantId);
+        verificarRestauranteExiste(restaurantId);
 
         if (categoryId != null) {
-            validateCategoryExists(categoryId);
+            verificarCategoriaExiste(categoryId);
         }
 
         return dishPersistencePort.findActiveDishesByRestaurant(restaurantId, categoryId, params);
     }
 
-    private Dish findDishOrThrow(Long id) {
+    private Dish buscarPlatoOLanzar(Long id) {
         return dishPersistencePort.findDishById(id)
                 .orElseThrow(() -> new DishNotFoundException(id));
     }
 
-    private void validateRestaurantExists(Long restaurantId) {
+    private void verificarRestauranteExiste(Long restaurantId) {
         restaurantPersistencePort.findRestaurantById(restaurantId)
                 .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
     }
 
-    private void validateCategoryExists(Long categoryId) {
+    private void verificarCategoriaExiste(Long categoryId) {
         if (!categoryPersistencePort.existsById(categoryId)) {
             throw new CategoryNotFoundException(categoryId);
         }
     }
 
-    private void validateOwnership(Long restaurantId, Long ownerId) {
+    private void verificarPropiedadRestaurante(Long restaurantId, Long ownerId) {
         Restaurant restaurant = restaurantPersistencePort.findRestaurantById(restaurantId)
                 .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
 
         if (!restaurant.getOwnerId().equals(ownerId)) {
-            throw new UnauthorizedAccessException(
-                    "El usuario no es propietario de este restaurante");
+            throw new UnauthorizedAccessException("El usuario no es propietario de este restaurante");
         }
     }
 
-    private void updatePrice(Dish existingDish, BigDecimal newPrice) {
+    private void verificarDatosPlato(Dish dish) {
+        if (dish.getName() == null || dish.getName().trim().isEmpty()) {
+            throw new DomainException("El nombre del plato no puede estar vacío");
+        }
+        if (dish.getName().length() > 100) {
+            throw new DomainException("El nombre del plato no puede exceder 100 caracteres");
+        }
+        if (dish.getPrice() == null || dish.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new DomainException("El precio debe ser mayor a cero");
+        }
+        if (dish.getDescription() == null || dish.getDescription().trim().isEmpty()) {
+            throw new DomainException("La descripción del plato no puede estar vacía");
+        }
+        if (dish.getDescription().length() > 500) {
+            throw new DomainException("La descripción no puede exceder 500 caracteres");
+        }
+        if (dish.getImageUrl() == null || dish.getImageUrl().trim().isEmpty()) {
+            throw new DomainException("La URL de la imagen no puede estar vacía");
+        }
+        if (!dish.getImageUrl().matches("^https?://.*")) {
+            throw new DomainException("La URL de la imagen debe comenzar con http:// o https://");
+        }
+        if (dish.getCategoryId() == null) {
+            throw new DomainException("La categoría es obligatoria");
+        }
+        if (dish.getRestaurantId() == null) {
+            throw new DomainException("El restaurante es obligatorio");
+        }
+    }
+
+    private void actualizarPrecio(Dish existingDish, BigDecimal newPrice) {
         if (newPrice == null) {
             return;
         }
         if (newPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("El precio debe ser mayor a cero");
+            throw new DomainException("El precio debe ser mayor a cero");
         }
         existingDish.setPrice(newPrice);
     }
 
-    private void updateDescription(Dish existingDish, String newDescription) {
+    private void actualizarDescripcion(Dish existingDish, String newDescription) {
         if (newDescription == null || newDescription.trim().isEmpty()) {
             return;
         }
         if (newDescription.length() > 500) {
-            throw new IllegalArgumentException("La descripción no puede exceder 500 caracteres");
+            throw new DomainException("La descripción no puede exceder 500 caracteres");
         }
         existingDish.setDescription(newDescription);
     }

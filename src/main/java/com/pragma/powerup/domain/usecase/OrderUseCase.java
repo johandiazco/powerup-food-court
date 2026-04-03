@@ -22,6 +22,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class OrderUseCase implements IOrderServicePort {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -211,6 +214,7 @@ public class OrderUseCase implements IOrderServicePort {
                     user != null ? user.getRol().name() : "SYSTEM"
             );
         } catch (Exception e) {
+            log.warn("Error al registrar trazabilidad para pedido {}: {}", orderId, e.getMessage());
         }
     }
 }

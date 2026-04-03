@@ -27,10 +27,11 @@ public class RestaurantUseCase implements IRestaurantServicePort {
 
     @Override
     public Restaurant createRestaurant(Restaurant restaurant) {
-        restaurant.validate();
-
+        // Validación de negocio en el UseCase
+        validateRestaurantData(restaurant);
         validateOwnerRole(restaurant.getOwnerId());
 
+        // Verificamos NIT no duplicado
         if (restaurantPersistencePort.existsByNit(restaurant.getNit())) {
             throw new RestaurantAlreadyExistsException(restaurant.getNit());
         }
@@ -52,6 +53,33 @@ public class RestaurantUseCase implements IRestaurantServicePort {
     @Override
     public DomainPage<Restaurant> getAllRestaurants(PaginationParams params) {
         return restaurantPersistencePort.findAllRestaurants(params);
+    }
+
+    private void validateRestaurantData(Restaurant restaurant) {
+        if (restaurant.getName() == null || restaurant.getName().trim().isEmpty()) {
+            throw new DomainException("El nombre del restaurante es obligatorio");
+        }
+
+        if (!restaurant.getName().matches("^(?=.*[a-zA-Z]).+$")) {
+            throw new DomainException("El nombre del restaurante debe contener al menos una letra");
+        }
+
+        if (restaurant.getNit() == null || restaurant.getNit().length() < 5) {
+            throw new DomainException("El NIT debe tener al menos 5 caracteres");
+        }
+
+        if (restaurant.getAddress() == null || restaurant.getAddress().trim().isEmpty()) {
+            throw new DomainException("La dirección es obligatoria");
+        }
+
+        if (restaurant.getPhone() == null || !restaurant.getPhone().matches("^\\+?\\d{10,13}$")) {
+            throw new DomainException(
+                    "El teléfono debe tener entre 10 y 13 dígitos (puede incluir +)");
+        }
+
+        if (restaurant.getOwnerId() == null || restaurant.getOwnerId() <= 0) {
+            throw new DomainException("El ID del propietario es inválido");
+        }
     }
 
     private void validateOwnerRole(Long ownerId) {
