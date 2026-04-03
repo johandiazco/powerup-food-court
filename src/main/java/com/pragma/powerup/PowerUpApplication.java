@@ -1,15 +1,12 @@
 package com.pragma.powerup;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+@SpringBootApplication
+public class PowerUpApplication {
 
-@SpringBootTest
-class PowerUpApplicationTests {
-
-    @Test
-    void contextLoads() {
-        assertDoesNotThrow(() -> {}, "El contexto de Spring Boot debe cargar correctamente");
+    public static void main(String[] args) {
+        SpringApplication.run(PowerUpApplication.class, args);
     }
 }
