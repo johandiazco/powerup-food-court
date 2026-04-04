@@ -16,7 +16,6 @@ public class UserUseCase implements IUserServicePort {
     private static final String FORMATO_EMAIL = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
     private static final String FORMATO_CELULAR = "^\\+?\\d{10,13}$";
     private static final String FORMATO_DOCUMENTO = "^\\d+$";
-    private static final int EDAD_MINIMA = 18;
 
     private final IUserPersistencePort userPersistencePort;
 
@@ -28,12 +27,9 @@ public class UserUseCase implements IUserServicePort {
     public User createPropietario(User user) {
         user.setRol(Role.PROPIETARIO);
         verificarDatosObligatorios(user);
-        verificarFormatoEmail(user.getCorreo());
-        verificarFormatoCelular(user.getCelular());
-        verificarFormatoDocumento(user.getDocumentoIdentidad());
+        verificarFormatos(user);
         verificarMayoriaDeEdad(user);
-        verificarCorreoNoRegistrado(user.getCorreo());
-        verificarDocumentoNoRegistrado(user.getDocumentoIdentidad());
+        verificarNoExisteUsuario(user);
 
         return userPersistencePort.saveUser(user);
     }
@@ -42,11 +38,8 @@ public class UserUseCase implements IUserServicePort {
     public User createEmpleado(User user) {
         user.setRol(Role.EMPLEADO);
         verificarDatosObligatorios(user);
-        verificarFormatoEmail(user.getCorreo());
-        verificarFormatoCelular(user.getCelular());
-        verificarFormatoDocumento(user.getDocumentoIdentidad());
-        verificarCorreoNoRegistrado(user.getCorreo());
-        verificarDocumentoNoRegistrado(user.getDocumentoIdentidad());
+        verificarFormatos(user);
+        verificarNoExisteUsuario(user);
 
         return userPersistencePort.saveUser(user);
     }
@@ -55,11 +48,8 @@ public class UserUseCase implements IUserServicePort {
     public User createCliente(User user) {
         user.setRol(Role.CLIENTE);
         verificarDatosObligatorios(user);
-        verificarFormatoEmail(user.getCorreo());
-        verificarFormatoCelular(user.getCelular());
-        verificarFormatoDocumento(user.getDocumentoIdentidad());
-        verificarCorreoNoRegistrado(user.getCorreo());
-        verificarDocumentoNoRegistrado(user.getDocumentoIdentidad());
+        verificarFormatos(user);
+        verificarNoExisteUsuario(user);
 
         return userPersistencePort.saveUser(user);
     }
@@ -86,6 +76,12 @@ public class UserUseCase implements IUserServicePort {
     }
 
     private void verificarDatosObligatorios(User user) {
+        verificarDatosPersonales(user);
+        verificarDatosContacto(user);
+        verificarDatosSeguridad(user);
+    }
+
+    private void verificarDatosPersonales(User user) {
         if (user.getNombre() == null || user.getNombre().trim().isEmpty()) {
             throw new DomainException("El nombre es obligatorio");
         }
@@ -101,6 +97,9 @@ public class UserUseCase implements IUserServicePort {
         if (user.getDocumentoIdentidad() == null || user.getDocumentoIdentidad().trim().isEmpty()) {
             throw new DomainException("El documento de identidad es obligatorio");
         }
+    }
+
+    private void verificarDatosContacto(User user) {
         if (user.getCelular() == null || user.getCelular().trim().isEmpty()) {
             throw new DomainException("El celular es obligatorio");
         }
@@ -110,6 +109,9 @@ public class UserUseCase implements IUserServicePort {
         if (user.getCorreo() == null || user.getCorreo().trim().isEmpty()) {
             throw new DomainException("El correo es obligatorio");
         }
+    }
+
+    private void verificarDatosSeguridad(User user) {
         if (user.getClave() == null || user.getClave().trim().isEmpty()) {
             throw new DomainException("La clave es obligatoria");
         }
@@ -119,6 +121,12 @@ public class UserUseCase implements IUserServicePort {
         if (user.getRol() == null) {
             throw new DomainException("El rol es obligatorio");
         }
+    }
+
+    private void verificarFormatos(User user) {
+        verificarFormatoEmail(user.getCorreo());
+        verificarFormatoCelular(user.getCelular());
+        verificarFormatoDocumento(user.getDocumentoIdentidad());
     }
 
     private void verificarFormatoEmail(String correo) {
@@ -152,6 +160,11 @@ public class UserUseCase implements IUserServicePort {
         if (!user.esMayorDeEdad()) {
             throw new DomainException("El usuario debe ser mayor de edad (18 años o más)");
         }
+    }
+
+    private void verificarNoExisteUsuario(User user) {
+        verificarCorreoNoRegistrado(user.getCorreo());
+        verificarDocumentoNoRegistrado(user.getDocumentoIdentidad());
     }
 
     private void verificarCorreoNoRegistrado(String correo) {
