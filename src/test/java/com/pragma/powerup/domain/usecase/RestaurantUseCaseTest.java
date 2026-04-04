@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import com.pragma.powerup.domain.model.User;
 import com.pragma.powerup.domain.model.Role;
+import com.pragma.powerup.domain.exception.DomainException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Restaurant Use Case Tests")
@@ -101,8 +102,8 @@ class RestaurantUseCaseTest {
                 .ownerId(10L)
                 .build();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        DomainException exception = assertThrows(
+                DomainException.class,
                 () -> restaurantUseCase.createRestaurant(invalidRestaurant)
         );
         assertTrue(exception.getMessage().contains("nombre"));
@@ -121,8 +122,8 @@ class RestaurantUseCaseTest {
                 .ownerId(10L)
                 .build();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        DomainException exception = assertThrows(
+                DomainException.class,
                 () -> restaurantUseCase.createRestaurant(invalidRestaurant)
         );
         assertTrue(exception.getMessage().contains("teléfono"));

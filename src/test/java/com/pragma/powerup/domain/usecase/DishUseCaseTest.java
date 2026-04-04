@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import com.pragma.powerup.domain.exception.DomainException;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -109,8 +110,8 @@ class DishUseCaseTest {
 
         validDish.setPrice(BigDecimal.ZERO);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        DomainException exception = assertThrows(
+                DomainException.class,
                 () -> dishUseCase.createDish(validDish)
         );
         assertTrue(exception.getMessage().contains("precio"));
@@ -122,8 +123,8 @@ class DishUseCaseTest {
 
         validDish.setDescription("");
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        DomainException exception = assertThrows(
+                DomainException.class,
                 () -> dishUseCase.createDish(validDish)
         );
         assertTrue(exception.getMessage().contains("descripción"));
@@ -180,7 +181,7 @@ class DishUseCaseTest {
         Dish updateData = new Dish();
         updateData.setPrice(BigDecimal.valueOf(-1000));
 
-        assertThrows(IllegalArgumentException.class, () -> dishUseCase.updateDish(1L, updateData));
+        assertThrows(DomainException.class, () -> dishUseCase.updateDish(1L, updateData));
     }
 
     @Test
@@ -215,8 +216,8 @@ class DishUseCaseTest {
         String longDescription = "a".repeat(501);
         validDish.setDescription(longDescription);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        DomainException exception = assertThrows(
+                DomainException.class,
                 () -> dishUseCase.createDish(validDish)
         );
         assertTrue(exception.getMessage().contains("descripción") || exception.getMessage().contains("500"));
